@@ -51,7 +51,7 @@ public class RateLimitingService {
             // USER: Limited to 2 uploads per 1 hour
             // Refill.intervally means "refill 2 tokens every 60 minutes"
             return Bucket.builder()
-                    .addLimit(Bandwidth.classic(2, Refill.intervally(2, Duration.ofHours(1))))
+                    .addLimit(Bandwidth.classic(1, Refill.intervally(1, Duration.ofHours(1))))
                     .build();
         }
     }

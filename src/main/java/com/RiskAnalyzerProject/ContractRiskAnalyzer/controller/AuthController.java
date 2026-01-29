@@ -35,7 +35,20 @@ public class AuthController {
             user.setPassword(request.getPassword());
             user.setRole(request.getRole()); // Service handles default "USER" if null
             String result = authService.registerUser(user);
-            return ResponseEntity.ok(result);
+           return ResponseEntity.ok(Map.of("message", result));
+    }
+    @PostMapping("/register/verify")
+    public ResponseEntity<?> verifyRegistration(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String otp = request.get("otp");
+        authService.verifyRegistration(email, otp);
+        return ResponseEntity.ok(Map.of("message", "Account Verified! Please Login."));
+    }
+    @PostMapping("/register/resend-otp")
+    public ResponseEntity<?> resendRegistrationOtp(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        authService.resendRegistrationOtp(email);
+        return ResponseEntity.ok(Map.of("message", "Verification code resent successfully."));
     }
     @Valid
     @PostMapping("/login")
@@ -122,7 +135,7 @@ public class AuthController {
         user.setRole("USER");
 
         // 5. Save User
-        authService.registerUser(user);
+        authService.registerOAuthUser(user);
 
         // 6. Generate Real Login Token
         String token = jwtUtil.generateToken(user.getUsername());

@@ -12,6 +12,7 @@ import ContractDetails from './pages/contractDetails';
 import Settings from './pages/settings';
 import ForgotPassword from './pages/forgotPassword';
 import CompleteRegistration from './pages/completeRegistration';
+import AutoLogout from './pages/AutoLogout';
 
 const PrivateRoute = ({ children }) => {
     const token = localStorage.getItem('jwtToken');
@@ -22,6 +23,7 @@ function App() {
   return (
     <Router>
       <ToastContainer position="top-center" autoClose={3000} />
+      <AutoLogout />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />

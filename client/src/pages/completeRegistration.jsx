@@ -74,6 +74,7 @@ const CompleteRegistration = () => {
             });
 
             localStorage.setItem('jwtToken', response.data.token);
+            localStorage.setItem('lastActive', Date.now().toString());
             toast.success("Registration Complete! Welcome.");
             navigate('/dashboard');
         } catch (error) {

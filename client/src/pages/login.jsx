@@ -42,6 +42,7 @@ const Login = () => {
         const error = params.get('error');
         if (token) {
             localStorage.setItem('jwtToken', token);
+            localStorage.setItem('lastActive', Date.now().toString());
             toast.success("Login Successful via Google!");
             navigate('/dashboard');
         } else if (error === 'user_exists') {
