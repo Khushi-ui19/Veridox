@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.scheduling.annotation.Scheduled;
 
 @Service
 public class RateLimitingService {
@@ -54,6 +55,11 @@ public class RateLimitingService {
                     .addLimit(Bandwidth.classic(1, Refill.intervally(1, Duration.ofHours(1))))
                     .build();
         }
+    }
+    @Scheduled(fixedRate = 86400000)
+    public void clearRateLimitCache() {
+        cache.clear();
+        System.out.println("Rate Limit Cache cleared to free up memory.");
     }
 
 }
