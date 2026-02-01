@@ -17,6 +17,24 @@ import java.io.File;
 
 @Service
 public class PdfService {
+    private ITesseract tesseract;
+    // This runs ONLY when the first user uploads a file, not when the server starts.
+    private ITesseract getTesseract() {
+        if (tesseract == null) {
+            tesseract = new Tesseract();
+
+            // Logic to find the folder
+            String projectPath = System.getProperty("user.dir");
+            String tessDataPath = projectPath + File.separator + "tessdata";
+
+            System.out.println("⚠️ Initializing Tesseract (First Time Load)...");
+            System.out.println("📂 TessData Path: " + tessDataPath);
+
+            tesseract.setDatapath(tessDataPath);
+            tesseract.setLanguage("eng");
+        }
+        return tesseract;
+    }
     public String Text(MultipartFile file) throws IOException{
         try (PDDocument document = Loader.loadPDF(file.getBytes())) {
         PDFTextStripper stripper = new PDFTextStripper();

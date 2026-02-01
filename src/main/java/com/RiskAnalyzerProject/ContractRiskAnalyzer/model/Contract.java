@@ -16,6 +16,10 @@ public class Contract {
     private String analysisJson; //Return->Json String by AI
     private String jurisdiction;
     private String contractType;
+    private String status;
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
     public String getExtractedText() {
         return this.rawText;
