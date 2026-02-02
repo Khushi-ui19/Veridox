@@ -82,4 +82,15 @@ public class PdfService {
 
         return out.toString();
     }
+    // method for Async processing
+    public String extractTextFromBytes(byte[] fileBytes) throws IOException {
+        try (PDDocument document = Loader.loadPDF(fileBytes)) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            String text = stripper.getText(document);
+            if (text != null && !text.trim().isEmpty()) {
+                return text;
+            }
+            return extractTextUsingOCR(document);
+        }
+    }
 }

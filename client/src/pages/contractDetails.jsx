@@ -22,25 +22,42 @@ const ContractDetails = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchContract = async () => {
-            try {
-                const response = await api.get(`/contracts/${id}`);
-                setContract(response.data);
-                if (response.data.analysisJson) {
-                    try {
-                        setAnalysis(JSON.parse(response.data.analysisJson));
-                    } catch (e) {
-                        console.error("Failed to parse analysis JSON", e);
+            let isMounted = true; // Prevents errors if user leaves the page
+
+            const fetchContract = async () => {
+                try {
+                    const response = await api.get(`/contracts/${id}`);
+
+                    if (isMounted) {
+                        setContract(response.data);
+
+                        // --- NEW: POLLING LOGIC ---
+                        if (response.data.status === 'PROCESSING') {
+                            // If status is still processing, wait 2s and try again
+                            setTimeout(fetchContract, 2000);
+                            return; // Stop here, don't try to parse JSON yet
+                        }
+                        // --------------------------
+
+                        if (response.data.analysisJson) {
+                            try {
+                                setAnalysis(JSON.parse(response.data.analysisJson));
+                            } catch (e) {
+                                console.error("Failed to parse analysis JSON", e);
+                            }
+                        }
+                        setLoading(false);
                     }
+                } catch (error) {
+                    console.error("Error fetching contract details:", error);
+                    if (isMounted) setLoading(false);
                 }
-            } catch (error) {
-                console.error("Error fetching contract details:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchContract();
-    }, [id]);
+            };
+
+            fetchContract();
+
+            return () => { isMounted = false; }; // Cleanup function
+        }, [id]);
 
     const getVariant = (level) => {
         if (!level) return 'secondary';
@@ -84,6 +101,25 @@ const ContractDetails = () => {
             <Button variant="link" onClick={() => navigate('/dashboard')}>Go Back</Button>
         </div>
     );
+
+if (!loading && contract && contract.status === 'PROCESSING') {
+        return (
+            <Container className="d-flex flex-column align-items-center justify-content-center text-center" style={{ minHeight: '60vh' }}>
+                <div className="spinner-border text-primary" style={{ width: '4rem', height: '4rem' }} role="status">
+                    <span className="visually-hidden">Loading...</span>
+                </div>
+                <h2 className="mt-4 fw-bold text-dark">Analysis in Progress...</h2>
+                <p className="text-muted fs-5">
+                    Our AI is reading your contract. This usually takes 10-20 seconds.
+                    <br />
+                    Please stay on this page.
+                </p>
+                <Badge bg="info" className="px-3 py-2 rounded-pill">
+                    Status: Processing
+                </Badge>
+            </Container>
+        );
+    }
 
     return (
         <div className="min-vh-100 fade-in py-4 py-md-5"

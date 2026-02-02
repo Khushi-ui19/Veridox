@@ -63,14 +63,28 @@ public class AnalyzerController {
                 "resetTime", System.currentTimeMillis() + waitForRefillMs
         ));
     }
+    @GetMapping("/{id}/status")
+    public ResponseEntity<Map<String, String>> getContractStatus(@PathVariable String id, Principal principal) {
+        Contract contract = contractService.getContractById(id, principal.getName())
+                .orElseThrow(() -> new RuntimeException("Contract not found"));
+
+        return ResponseEntity.ok(Map.of(
+                "status", contract.getStatus() != null ? contract.getStatus() : "UNKNOWN",
+                "id", contract.getId()
+        ));
+    }
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Contract> uploadContract(@RequestParam("file") MultipartFile file, Principal  principal,
-                                                   @RequestParam(value = "jurisdiction", defaultValue = "General")String jurisdiction,
-                                                   @RequestParam(value = "contractType", defaultValue = "General Contract") String contractType) throws IOException, java.io.IOException {
-        Contract savedContract = contractService.processAndSaveContract(file , principal.getName(), jurisdiction, contractType);
+    public ResponseEntity<Contract> uploadContract(
+            @RequestParam("file") MultipartFile file,
+            Principal principal,
+            @RequestParam(value = "jurisdiction", defaultValue = "General") String jurisdiction,
+            @RequestParam(value = "contractType", defaultValue = "General Contract") String contractType) throws IOException {
+
+        // Calls the FAST method now
+        Contract savedContract = contractService.initiateContractAnalysis(file, principal.getName(), jurisdiction, contractType);
         return ResponseEntity.ok(savedContract);
-}
+    }
     @PostMapping("/chat")
     public ResponseEntity<Map<String, String>> chatWithAI(@RequestBody ChatRequest request , Principal principal) {
             // Call the single unified method

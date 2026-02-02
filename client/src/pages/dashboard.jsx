@@ -154,27 +154,58 @@ const Dashboard = () => {
         }
     };
 
+    // --- UPDATED UPLOAD HANDLER (ASYNC POLLING) ---
     const handleUpload = async () => {
         if (!selectedFile) return;
 
         const formData = new FormData();
         formData.append("file", selectedFile);
-        formData.append("jurisdiction", jurisdiction); // Send Jurisdiction
-        formData.append("contractType", contractType); // Send Contract Type
+        formData.append("jurisdiction", jurisdiction);
+        formData.append("contractType", contractType);
 
         setUploading(true);
         try {
-            toast.info(`Analyzing ${contractType} under ${jurisdiction} law...`);
-            await api.post('/contracts/upload', formData, {
+            toast.info(`Uploading ${contractType}...`);
+
+            // 1. Initial Upload Request (Returns fast)
+            const response = await api.post('/contracts/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            toast.success("Analysis Complete!");
+
+            const contractId = response.data.id;
+            toast.info("AI Analysis running in background...");
+
+            // 2. Refresh list immediately to show the "Processing" card
             fetchContracts();
             fetchQuota();
-            setSelectedFile(null);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = "";
+
+            // 3. Start Polling Loop
+            let isAnalysisComplete = false;
+            while (!isAnalysisComplete) {
+                // Wait 2 seconds
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                // Check Status
+                const statusRes = await api.get(`/contracts/${contractId}/status`);
+                const status = statusRes.data.status;
+
+                if (status === 'COMPLETED') {
+                    isAnalysisComplete = true;
+                    toast.success("Analysis Complete!");
+                    fetchContracts(); // Final refresh to show results
+
+                    // Reset inputs
+                    setSelectedFile(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+
+                } else if (status === 'FAILED') {
+                    isAnalysisComplete = true;
+                    toast.error("Analysis Failed. Please try again.");
+                    fetchContracts(); // Refresh to show failure state if needed
+                }
+                // If "PROCESSING", loop continues...
             }
+
         } catch (error) {
             const msg = error.response?.data?.message || "Upload failed!";
             toast.error(msg);
@@ -212,16 +243,13 @@ const Dashboard = () => {
                  overflowX: 'hidden'
              }}>
 
-            {/* Background Blobs (Hidden on mobile via CSS class) */}
+            {/* Background Blobs */}
             <div className="background-blob" style={{ position: 'absolute', top: '-10%', left: '-10%', width: '600px', height: '600px', background: '#6366f1', filter: 'blur(150px)', opacity: '0.15', borderRadius: '50%', zIndex: '0' }}></div>
 
             <Container style={{ position: 'relative', zIndex: 1 }} className="pt-3 pt-md-4">
 
-                {/* --- 1. NAVBAR (FIXED FOR DESKTOP) --- */}
-                {/* Desktop: Justify Between (Left/Right) | Mobile: Flex Column (Centered) */}
+                {/* --- 1. NAVBAR --- */}
                 <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-5 gap-3">
-
-                    {/* Brand Section */}
                     <div className="text-center text-md-start">
                         <div
                             className="d-flex align-items-center justify-content-center justify-content-md-start gap-2 mb-1"
@@ -235,8 +263,6 @@ const Dashboard = () => {
                         <p className="text-muted mb-0 ms-1">Welcome back, <span className="fw-bold text-primary">{user.username}</span></p>
                     </div>
 
-                    {/* Actions Section */}
-                    {/* Desktop: Align Right | Mobile: Full Width Buttons */}
                     <div className="d-flex gap-2 w-100 w-md-auto justify-content-center justify-content-md-end">
                         <Button variant="white" className="shadow-sm rounded-pill fw-bold text-primary border flex-grow-1 flex-md-grow-0" onClick={() => navigate('/chat/general')}>
                             <FaComments className="me-2" /> AI Chat
@@ -282,7 +308,6 @@ const Dashboard = () => {
                 <Row className="g-4 mb-5">
                     {!isAdmin && (
                         <Col md={12} lg={6}>
-                            {/* Credits Card */}
                             <Card className="border-0 h-100" style={{ ...glassStyle, background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)', color: 'white' }}>
                                 <Card.Body className="p-4 d-flex flex-column justify-content-center">
                                     <div className="d-flex justify-content-between align-items-start">
@@ -314,8 +339,6 @@ const Dashboard = () => {
 
                                 {/* --- UPLOAD CONTROLS --- */}
                                 <div className="d-flex flex-column gap-3">
-
-                                    {/* Row 1: Dropdowns */}
                                     <div className="d-flex flex-column flex-md-row gap-2">
                                         <Form.Select
                                             value={jurisdiction}
@@ -345,7 +368,6 @@ const Dashboard = () => {
                                         </Form.Select>
                                     </div>
 
-                                    {/* Row 2: File & Button */}
                                     <div className="d-flex flex-column flex-md-row gap-2">
                                         <Form.Control
                                             type="file"
@@ -361,7 +383,6 @@ const Dashboard = () => {
                                             onClick={handleUpload}
                                             disabled={uploading || !selectedFile}
                                             className="shadow-lg rounded-pill px-4 fw-bold"
-                                            // Desktop: Fixed width (Clean) | Mobile: Full width (Easy tap)
                                             style={{ minWidth: '150px' }}
                                         >
                                             {uploading ? <><FaRobot className="me-2 pulse" /> Analyzing</> : "Analyze"}
@@ -381,7 +402,6 @@ const Dashboard = () => {
                         <span className="text-muted ms-2 fs-6 fw-normal">({filteredContracts.length})</span>
                     </h4>
 
-                    {/* Search Bar: Fixed width on Desktop, Full on Mobile */}
                     <InputGroup
                         className="shadow-sm rounded-pill overflow-hidden border-0 bg-white mobile-full-width"
                         style={{ width: '300px' }}
@@ -406,6 +426,9 @@ const Dashboard = () => {
                                 if (analysis.risk_level) riskLevel = analysis.risk_level.toLowerCase();
                             }
                         } catch (e) { }
+
+                        // --- CHECK PROCESSING STATUS ---
+                        const isProcessing = contract.status === 'PROCESSING';
                         const riskBadge = getRiskBadge(riskLevel);
 
                         return (
@@ -424,9 +447,19 @@ const Dashboard = () => {
                                             <div className="bg-white p-2 rounded shadow-sm text-primary">
                                                 <FaFileContract size={20} />
                                             </div>
-                                            <Badge bg={riskBadge.variant} className="py-2 px-3 rounded-pill fw-normal d-flex align-items-center shadow-sm">
-                                                {riskBadge.icon} <span className="ms-1">{riskBadge.text}</span>
-                                            </Badge>
+
+                                            {/* --- STATUS BADGE LOGIC --- */}
+                                            {isProcessing ? (
+                                                <Badge bg="secondary" className="py-2 px-3 rounded-pill fw-normal d-flex align-items-center shadow-sm">
+                                                    <FaClock className="me-2 spinner-border spinner-border-sm" />
+                                                    <span>Processing...</span>
+                                                </Badge>
+                                            ) : (
+                                                <Badge bg={riskBadge.variant} className="py-2 px-3 rounded-pill fw-normal d-flex align-items-center shadow-sm">
+                                                    {riskBadge.icon} <span className="ms-1">{riskBadge.text}</span>
+                                                </Badge>
+                                            )}
+                                            {/* ------------------------- */}
                                         </div>
 
                                         <Card.Title className="text-truncate fw-bold text-dark mb-1" title={contract.filename}>
@@ -445,7 +478,13 @@ const Dashboard = () => {
                                         </Card.Text>
 
                                         <div className="mt-auto d-grid gap-2">
-                                            <Button variant="outline-primary" size="sm" className="rounded-pill fw-semibold" onClick={() => navigate(`/contracts/${contract.id}`)}>
+                                            <Button
+                                                variant="outline-primary"
+                                                size="sm"
+                                                className="rounded-pill fw-semibold"
+                                                disabled={isProcessing} // Disable if processing
+                                                onClick={() => navigate(`/contracts/${contract.id}`)}
+                                            >
                                                 View Report <FaArrowRight className="ms-1" size={10} />
                                             </Button>
                                             <div className="d-flex gap-2">

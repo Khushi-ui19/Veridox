@@ -10,6 +10,7 @@ import ch.qos.logback.classic.Logger;
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.repository.UserRepository;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,29 +40,53 @@ public class ContractService {
     @Autowired
     private RateLimitingService rateLimitingService;
 
-    public Contract processAndSaveContract(MultipartFile file,String username, String jurisdiction, String contractType) throws IOException {
+    // 1. FAST METHOD: Starts the process & returns immediately
+    public Contract initiateContractAnalysis(MultipartFile file, String username, String jurisdiction, String contractType) throws IOException {
+        // Rate Limit Check
         if (!rateLimitingService.tryConsume(username)) {
-            // Throw existing AppException (returns 400 Bad Request)
             throw new com.RiskAnalyzerProject.ContractRiskAnalyzer.exception.AppException(
                     "Upload limit exceeded! Free accounts are limited to 2 analysis requests per hour."
             );
         }
-        try {
-            String text = pdfService.Text(file);
-            String analysis = aiAnalysis.AnalysisContract(text, jurisdiction , contractType);
 
-            Contract contract = new Contract();
-            contract.setFilename(file.getOriginalFilename());
+        // Create "Ticket" in DB
+        Contract contract = new Contract();
+        contract.setFilename(file.getOriginalFilename());
+        contract.setUploadDate(LocalDateTime.now().toString());
+        contract.setOwnerUsername(username);
+        contract.setJurisdiction(jurisdiction);
+        contract.setContractType(contractType);
+        contract.setStatus("PROCESSING"); // <--- Set Status
+
+        Contract savedContract = contractRepository.save(contract);
+
+        // Start Background Thread (Fire and Forget)
+        processAsync(savedContract.getId(), file.getBytes());
+
+        return savedContract;
+    }
+
+    // 2. SLOW METHOD: Runs in background
+    @Async
+    public void processAsync(String contractId, byte[] fileBytes) {
+        Contract contract = contractRepository.findById(contractId).orElse(null);
+        if (contract == null) return;
+
+        try {
+            // Heavy Lifting (OCR + AI)
+            String text = pdfService.extractTextFromBytes(fileBytes);
+            String analysis = aiAnalysis.AnalysisContract(text, contract.getJurisdiction(), contract.getContractType());
+
+            // Save Result
             contract.setRawText(text);
             contract.setAnalysisJson(analysis);
-            contract.setUploadDate(LocalDateTime.now().toString());
-            contract.setOwnerUsername(username);
-            contract.setJurisdiction(jurisdiction);
-            contract.setContractType(contractType);
+            contract.setStatus("COMPLETED");
+            contractRepository.save(contract);
 
-            return contractRepository.save(contract);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to process file", e);
+        } catch (Exception e) {
+            e.printStackTrace(); // Log error
+            contract.setStatus("FAILED");
+            contractRepository.save(contract);
         }
     }
     public String chatWithAi(String question , String contractId , String conversationId){
