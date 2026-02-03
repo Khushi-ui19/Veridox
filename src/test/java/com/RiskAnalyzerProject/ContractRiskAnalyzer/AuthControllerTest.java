@@ -11,9 +11,14 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -44,5 +49,25 @@ public class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk()); // Expect HTTP 200 OK
+    }
+    @Test
+    public void testResetPasswordEndpoint_Success() throws Exception {
+        // 1. SETUP: Mock the service call to do nothing (void)
+        doNothing().when(authService).resetPassword("test@example.com", "123456", "newPass");
+
+        // 2. Prepare JSON Request
+        Map<String, String> requestMap = new HashMap<>();
+        requestMap.put("email", "test@example.com");
+        requestMap.put("otp", "123456");
+        requestMap.put("newPassword", "newPass");
+
+        String jsonContent = objectMapper.writeValueAsString(requestMap);
+
+        // 3. ACTION: Hit the API
+        mockMvc.perform(post("/api/auth/forgot-password/reset")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonContent))
+                .andExpect(status().isOk()) // Expect 200 OK
+                .andExpect(jsonPath("$.message").value("Password reset successfully. You can now login."));
     }
 }

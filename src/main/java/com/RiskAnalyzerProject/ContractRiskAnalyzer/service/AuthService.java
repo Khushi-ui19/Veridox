@@ -236,8 +236,11 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFound("User not found with email: " + email));
 
+        if (user.getOtp() == null || user.getOtpExpiryTime() == null) {
+            throw new AppException("Invalid request. Please request a new OTP.");
+        }
         if (user.getOtpExpiryTime().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("OTP has expired"); // GlobalExceptionHandler handles RuntimeException generally, or use AppException
+            throw new AppException("OTP has expired. Please request a new one."); // GlobalExceptionHandler handles RuntimeException generally, or use AppException
         }
 
         if (!user.getOtp().equals(otp)) {
@@ -247,6 +250,7 @@ public class AuthService {
         // Update Password
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setOtp(null); // Clear used OTP
+        user.setOtpExpiryTime(null); // Clean up the expiry time too
         userRepository.save(user);
     }
 
