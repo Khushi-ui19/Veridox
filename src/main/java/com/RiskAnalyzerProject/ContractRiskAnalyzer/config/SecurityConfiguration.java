@@ -57,7 +57,8 @@ public class SecurityConfiguration {
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
                 "http://localhost:8080",
-                "https://intellectual-wilona-animeshj425-62b84662.koyeb.app" // <--- Add your actual Domain
+                "https://intellectual-wilona-animeshj425-62b84662.koyeb.app", // <--- Add your actual Domain
+                "https://192.168.*.*"      // Allow Mobile on Local Wi-Fi (Optional)
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
