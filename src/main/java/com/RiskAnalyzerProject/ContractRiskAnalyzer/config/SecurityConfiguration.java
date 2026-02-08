@@ -54,11 +54,12 @@ public class SecurityConfiguration {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // Allow both Dev (5173) and Prod (8080) origins
-        configuration.setAllowedOrigins(List.of(
+        configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
                 "http://localhost:8080",
                 "https://intellectual-wilona-animeshj425-62b84662.koyeb.app", // <--- Add your actual Domain
-                "https://192.168.*.*"      // Allow Mobile on Local Wi-Fi (Optional)
+                "http://192.168.*.*",      // Allow Mobile on Local Wi-Fi (Optional)
+                "https://*.koyeb.app"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
