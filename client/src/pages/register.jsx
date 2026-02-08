@@ -64,8 +64,8 @@ const Register = () => {
             setStep(2); // Move to OTP step
             setResendCooldown(30); // Start 30s cooldown
         } catch (err) {
-            const errorMsg = err.response?.data?.message || "Registration failed. Please check your email and try again.";
-            toast.error(errorMsg);
+//             const errorMsg = err.response?.data?.message || "Registration failed. Please check your email and try again.";
+            toast.error(err.message);
         } finally {
             setLoading(false);
         }

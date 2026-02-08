@@ -10,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultHandler;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,6 +19,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -70,4 +72,26 @@ public class AuthControllerTest {
                 .andExpect(status().isOk()) // Expect 200 OK
                 .andExpect(jsonPath("$.message").value("Password reset successfully. You can now login."));
     }
+    @Test
+    public void testRegister_DebugError() throws Exception {
+        // 1. SETUP: Create JSON
+        String jsonRequest = """
+            {
+                "username": "DebugUser",
+                "email": "DebugUser@gmail.com",
+                "password": "pass"
+            }
+        """;
+
+        // ✅ FIX: Tell the Fake Service to return a String, not null
+        when(authService.registerUser(any())).thenReturn("Verification code sent!");
+
+        // 2. ACTION: Hit the API
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
+                .andExpect(status().isOk()); // Now it will be 200 OK
+    }
+
+
 }
