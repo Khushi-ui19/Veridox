@@ -53,6 +53,12 @@ public class AuthService {
 
     // STEP 1: Register (Save to RAM only)
     public String registerUser(User user) {
+        if (user.getUsername() != null) {
+            user.setUsername(user.getUsername().trim());
+        }
+        if (user.getEmail() != null) {
+            user.setEmail(user.getEmail().trim());
+        }
         // 1. Check DB for existing users (Real MongoDB check)
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new AppException("Error: Email is already in use!");
@@ -163,18 +169,19 @@ public class AuthService {
         userRepository.save(user); // Save directly to DB, skipping OTP/RAM map
     }
     public String loginUser(User loginRequest) {
-        if (!userRepository.existsByUsername(loginRequest.getUsername())) {
+        String cleanUsername = loginRequest.getUsername().trim();
+        if (!userRepository.existsByUsername(cleanUsername)) {
             throw new ResourceNotFound("User not found");
         }
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
+                    new UsernamePasswordAuthenticationToken(cleanUsername, loginRequest.getPassword())
             );
         } catch (Exception e) {
             throw new BadCredentialsException("Invalid username or password");
         }
 
-        User user = userRepository.findByUsername(loginRequest.getUsername())
+        User user = userRepository.findByUsername(cleanUsername)
                 .orElseThrow(() -> new ResourceNotFound("User not found"));
 
         if (!user.isVerified()) {
