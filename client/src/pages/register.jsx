@@ -220,7 +220,7 @@ const Register = () => {
                                     <Form.Label className="fw-semibold text-muted small text-uppercase ls-1 mb-1">Verification Code</Form.Label>
                                     <Form.Control
                                         type="text"
-                                        placeholder="00000000"
+                                        placeholder="000000"
                                         className="text-center fs-4 letter-spacing-1 shadow-sm"
                                         maxLength="8"
                                         value={otp}
