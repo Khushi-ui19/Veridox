@@ -37,6 +37,7 @@ const Login = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
+        localStorage.removeItem('jwtToken');
         const params = new URLSearchParams(window.location.search);
         const token = params.get('token');
         const error = params.get('error');
