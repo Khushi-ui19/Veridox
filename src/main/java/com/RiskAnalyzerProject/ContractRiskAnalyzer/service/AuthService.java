@@ -48,16 +48,16 @@ public class AuthService {
     private final Map<String, User> pendingRegistrations = new ConcurrentHashMap<>();
 
     public boolean emailExists(String email) {
-        return userRepository.existsByEmail(email);
+        return userRepository.existsByEmail(email.trim());
     }
 
     // STEP 1: Register (Save to RAM only)
     public String registerUser(User user) {
         if (user.getUsername() != null) {
-            user.setUsername(user.getUsername().trim().toLowerCase());
+            user.setUsername(user.getUsername().trim());
         }
         if (user.getEmail() != null) {
-            user.setEmail(user.getEmail().trim().toLowerCase());
+            user.setEmail(user.getEmail().trim());
         }
         if (user.getPassword() != null) user.setPassword(passwordEncoder.encode(user.getPassword().trim()));
         // 1. Check DB for existing users (Real MongoDB check)
@@ -98,9 +98,9 @@ public class AuthService {
     // STEP 2: Verify OTP (Move from RAM -> MongoDB)
     public void verifyRegistration(String email, String otp) {
         // 1. Look in RAM
-        String cleanEmail = email.trim().toLowerCase();
+        String cleanEmail = email.trim();
         String cleanOtp = otp.trim();
-        User pendingUser = pendingRegistrations.get(email);
+        User pendingUser = pendingRegistrations.get(cleanEmail);
         if (pendingUser == null) {
             // If not in RAM, maybe they verified already?
             if (userRepository.existsByEmail(cleanEmail)) {
@@ -171,7 +171,7 @@ public class AuthService {
         userRepository.save(user); // Save directly to DB, skipping OTP/RAM map
     }
     public String loginUser(User loginRequest) {
-        String cleanUsername = loginRequest.getUsername().trim().toLowerCase();
+        String cleanUsername = loginRequest.getUsername().trim();
         String cleanPassword = loginRequest.getPassword().trim();
         if (!userRepository.existsByUsername(cleanUsername)) {
             throw new ResourceNotFound("User not found");
@@ -201,7 +201,7 @@ public class AuthService {
     }
 
     public String verifyLoginOtp(String username, String otp) {
-        String cleanUsername = username.trim().toLowerCase();
+        String cleanUsername = username.trim();
         String cleanOtp = otp.trim();
         User user = userRepository.findByUsername(cleanUsername).orElseThrow(() -> new ResourceNotFound("User not found"));
         if (user.getOtpExpiryTime().isBefore(LocalDateTime.now())) throw new AppException("OTP has expired.");
