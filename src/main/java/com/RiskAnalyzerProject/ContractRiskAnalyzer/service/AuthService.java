@@ -48,17 +48,11 @@ public class AuthService {
     private final Map<String, User> pendingRegistrations = new ConcurrentHashMap<>();
 
     public boolean emailExists(String email) {
-        return userRepository.existsByEmail(email.trim());
+        return userRepository.existsByEmail(email);
     }
 
     // STEP 1: Register (Save to RAM only)
     public String registerUser(User user) {
-        if (user.getUsername() != null) {
-            user.setUsername(user.getUsername().trim());
-        }
-        if (user.getEmail() != null) {
-            user.setEmail(user.getEmail().trim());
-        }
         if (user.getPassword() != null) user.setPassword(passwordEncoder.encode(user.getPassword().trim()));
         // 1. Check DB for existing users (Real MongoDB check)
         if (userRepository.existsByEmail(user.getEmail())) {
@@ -98,12 +92,10 @@ public class AuthService {
     // STEP 2: Verify OTP (Move from RAM -> MongoDB)
     public void verifyRegistration(String email, String otp) {
         // 1. Look in RAM
-        String cleanEmail = email.trim();
-        String cleanOtp = otp.trim();
-        User pendingUser = pendingRegistrations.get(cleanEmail);
+        User pendingUser = pendingRegistrations.get(email);
         if (pendingUser == null) {
             // If not in RAM, maybe they verified already?
-            if (userRepository.existsByEmail(cleanEmail)) {
+            if (userRepository.existsByEmail(email)) {
                 throw new AppException("User already registered. Please Login.");
             }
             throw new ResourceNotFound("Session expired or invalid email. Please register again.");
@@ -111,11 +103,11 @@ public class AuthService {
 
         // 2. Validate OTP
         if (pendingUser.getOtpExpiryTime().isBefore(LocalDateTime.now())) {
-            pendingRegistrations.remove(cleanEmail);
+            pendingRegistrations.remove(email);
             throw new AppException("OTP has expired. Please register again.");
         }
 
-        if (!pendingUser.getOtp().equals(cleanOtp)) {
+        if (!pendingUser.getOtp().equals(otp)) {
             throw new BadCredentialsException("Invalid OTP");
         }
 
@@ -126,7 +118,7 @@ public class AuthService {
         userRepository.save(pendingUser); // <--- SAVED TO DB NOW
 
         // 4. Remove from RAM
-        pendingRegistrations.remove(cleanEmail);
+        pendingRegistrations.remove(email);
     }
 
     // STEP 3: Resend OTP (Update RAM)
@@ -171,19 +163,18 @@ public class AuthService {
         userRepository.save(user); // Save directly to DB, skipping OTP/RAM map
     }
     public String loginUser(User loginRequest) {
-        String cleanUsername = loginRequest.getUsername().trim();
-        if (!userRepository.existsByUsername(cleanUsername)) {
+        if (!userRepository.existsByUsername(loginRequest.getUsername())) {
             throw new ResourceNotFound("User not found");
         }
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(cleanUsername, loginRequest.getPassword())
+                    new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
             );
         } catch (Exception e) {
             throw new BadCredentialsException("Invalid username or password");
         }
 
-        User user = userRepository.findByUsername(cleanUsername)
+        User user = userRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(() -> new ResourceNotFound("User not found"));
 
         if (!user.isVerified()) {
@@ -200,14 +191,13 @@ public class AuthService {
     }
 
     public String verifyLoginOtp(String username, String otp) {
-        String cleanUsername = username.trim();
-        String cleanOtp = otp.trim();
-        User user = userRepository.findByUsername(cleanUsername).orElseThrow(() -> new ResourceNotFound("User not found"));
+
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFound("User not found"));
         if (user.getOtpExpiryTime().isBefore(LocalDateTime.now())) throw new AppException("OTP has expired.");
-        if (!user.getOtp().equals(cleanOtp)) throw new BadCredentialsException("Invalid OTP");
+        if (!user.getOtp().equals(otp)) throw new BadCredentialsException("Invalid OTP");
         user.setOtp(null);
         userRepository.save(user);
-        return jwtUtil.generateToken(cleanUsername);
+        return jwtUtil.generateToken(username);
     }
 
     public void logOutUser(HttpServletRequest request, HttpServletResponse response) {
