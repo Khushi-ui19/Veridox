@@ -170,7 +170,7 @@ public class AuthService {
         userRepository.save(user); // Save directly to DB, skipping OTP/RAM map
     }
     public String loginUser(User loginRequest) {
-        String cleanUsername = loginRequest.getUsername().trim();
+        String cleanUsername = loginRequest.getUsername().trim().toLowerCase();
         if (!userRepository.existsByUsername(cleanUsername)) {
             throw new ResourceNotFound("User not found");
         }
@@ -199,7 +199,7 @@ public class AuthService {
     }
 
     public String verifyLoginOtp(String username, String otp) {
-        String cleanUsername = username.trim();
+        String cleanUsername = username.trim().toLowerCase();
         String cleanOtp = otp.trim();
         User user = userRepository.findByUsername(cleanUsername).orElseThrow(() -> new ResourceNotFound("User not found"));
         if (user.getOtpExpiryTime().isBefore(LocalDateTime.now())) throw new AppException("OTP has expired.");
