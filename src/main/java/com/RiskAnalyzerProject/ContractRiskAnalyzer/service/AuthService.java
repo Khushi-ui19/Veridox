@@ -57,8 +57,9 @@ public class AuthService {
             user.setUsername(user.getUsername().trim().toLowerCase());
         }
         if (user.getEmail() != null) {
-            user.setEmail(user.getEmail().trim());
+            user.setEmail(user.getEmail().trim().toLowerCase());
         }
+        if (user.getPassword() != null) user.setPassword(passwordEncoder.encode(user.getPassword().trim()));
         // 1. Check DB for existing users (Real MongoDB check)
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new AppException("Error: Email is already in use!");
@@ -171,12 +172,13 @@ public class AuthService {
     }
     public String loginUser(User loginRequest) {
         String cleanUsername = loginRequest.getUsername().trim().toLowerCase();
+        String cleanPassword = loginRequest.getPassword().trim();
         if (!userRepository.existsByUsername(cleanUsername)) {
             throw new ResourceNotFound("User not found");
         }
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(cleanUsername, loginRequest.getPassword())
+                    new UsernamePasswordAuthenticationToken(cleanUsername, cleanPassword)
             );
         } catch (Exception e) {
             throw new BadCredentialsException("Invalid username or password");
