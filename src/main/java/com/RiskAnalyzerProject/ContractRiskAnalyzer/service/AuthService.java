@@ -172,13 +172,12 @@ public class AuthService {
     }
     public String loginUser(User loginRequest) {
         String cleanUsername = loginRequest.getUsername().trim();
-        String cleanPassword = loginRequest.getPassword().trim();
         if (!userRepository.existsByUsername(cleanUsername)) {
             throw new ResourceNotFound("User not found");
         }
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(cleanUsername, cleanPassword)
+                    new UsernamePasswordAuthenticationToken(cleanUsername, loginRequest.getPassword())
             );
         } catch (Exception e) {
             throw new BadCredentialsException("Invalid username or password");
