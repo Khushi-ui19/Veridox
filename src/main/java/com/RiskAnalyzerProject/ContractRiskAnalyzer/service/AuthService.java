@@ -53,7 +53,7 @@ public class AuthService {
 
     // STEP 1: Register (Save to RAM only)
     public String registerUser(User user) {
-        if (user.getPassword() != null) user.setPassword(passwordEncoder.encode(user.getPassword().trim()));
+        if (user.getPassword() != null) user.setPassword(passwordEncoder.encode(user.getPassword()));
         // 1. Check DB for existing users (Real MongoDB check)
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new AppException("Error: Email is already in use!");
