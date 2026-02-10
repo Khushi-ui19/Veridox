@@ -30,24 +30,29 @@ public class AiAnalysis {
         String safeText = contractText.length() > 10000
                 ? contractText.substring(0, 10000) : contractText;
         String prompt = """
-                ROLE:
-                     You are a Strict Legal Risk Auditor. Your job is to protect the user by finding EVERY possible liability, loophole, or unfair term.
-                     Do not be polite. Be paranoid and critical.
+              ROLE:
+                     You are a Senior Legal Document Analyst. Your goal is accuracy first, then risk analysis.
                 
                 CONTEXT:
-                     Analyze this contract under **%s LAW**.
-                     The user claims this is a **%s**.
+                     The user has uploaded a document for review under **%s LAW**.
+                     The user describes it as: **%s**.
                 
-                TASK:
-                     1. **Aggressive Risk Analysis**: Identify at least 3-5 distinct risks, even if they seem standard. Look for:
-                        - Unlimited Liability
-                        - Missing Termination Rights
-                        - Automatic Renewals without notice
-                        - One-sided Indemnification
-                        - Ambiguous language (e.g., "reasonable efforts")
-                     2. **COMPARISON**: Compare against a pro-consumer/pro-employee standard.
+                TASK 1: DOCUMENT CLASSIFICATION (CRITICAL)
+                     Read the text. Is this actually a Legal Contract, Agreement, Policy, or Binding Term Sheet?
+                     
+                     **SCENARIO A: It is NOT a Contract (e.g., Certificate, Diploma, Invoice, Receipt, Resume, ID Card)**
+                     - STOP analyzing risks.
+                     - Set "risk_score": 0.
+                     - Set "risk_level": "Safe".
+                     - In "summary": Explicitly state "This document appears to be a [Document Type] and does not contain legal risks."
+                     - Return empty lists for "key_risks", "missing_clauses", etc.
                 
-                OUTPUT FORMAT:
+                     **SCENARIO B: It IS a Contract**
+                     - Proceed with Strict Legal Risk Audit.
+                     - Be paranoid and critical.
+                     - Identify 3-5 distinct risks (Unlimited Liability, Auto-Renewal, etc.).
+                
+                TASK 2: OUTPUT FORMAT
                     You must output ONLY valid, raw JSON. 
                     - DO NOT use Markdown code blocks (```json).
                     - DO NOT include any text before the opening brace '{'.
@@ -55,8 +60,8 @@ public class AiAnalysis {
                     JSON Structure:
                         {
                           "summary": "High-level executive summary...",
-                          "risk_score": 0-100 (Higher = Risky),
-                          "risk_level": "Low/Medium/High",
+                          "risk_score": 0-100 (Integer. 0 for Certificates/Safe docs),
+                          "risk_level": "Low/Medium/High (Safe for Certificates)",
                           "key_risks": [
                                 {
                                     "clause": "Quote the specific short text from contract",
@@ -66,14 +71,13 @@ public class AiAnalysis {
                           ],
                           "missing_clauses": ["List of missing protective clauses"],
                           "recommendations": ["Specific actions to fix the risks"],
-                          "comparison_notes": "How this contract compares to industry standards" 
+                          "comparison_notes": "How this compares to industry standards" 
                         }
                 
-                CONTRACT TEXT:
-                """.formatted(jurisdiction.toUpperCase(), contractType.toUpperCase(), contractType.toUpperCase()) + safeText;
-       // Force temperature to 0.0 for consistent analysis
+                DOCUMENT TEXT:
+                """.formatted(jurisdiction.toUpperCase(), contractType.toUpperCase()) + safeText;
         OpenAiChatOptions options = OpenAiChatOptions.builder()
-                .temperature(0.5)
+                .temperature(0.4)
                 .build();
         // Call the AI model
         return chatClient.prompt()
@@ -90,7 +94,7 @@ public class AiAnalysis {
                     ? contractText.substring(0, 15000)
                     : contractText;
             prompt = """
-                ROLE:
+              ROLE:
                     You are a strict Legal Contract Analyst.
                 
                 INSTRUCTIONS:
@@ -104,7 +108,6 @@ public class AiAnalysis {
                 --- CONTRACT TEXT END ---
                 """.formatted(safeText);
 
-            // SCENARIO 2: GENERAL TALK (Helpful Assistant)
         } else {
             prompt = """
                 ROLE:
