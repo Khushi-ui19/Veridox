@@ -66,7 +66,6 @@ public class AuthService {
 
         // 2. Prepare User Object
         user.setVerified(false); // Not verified yet
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
 
         if (user.getRole() == null || user.getRole().isEmpty()) {
             user.setRole("USER");
