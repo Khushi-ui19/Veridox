@@ -27,8 +27,8 @@ public class AiAnalysis {
 
     @Cacheable(value = "contractAnalysis", key = "#contractText.hashCode()+ #jurisdiction + #contractType")
     public String AnalysisContract(String contractText, String jurisdiction, String contractType) {
-        String safeText = contractText.length() > 10000
-                ? contractText.substring(0, 10000) : contractText;
+        String safeText = contractText.length() > 60000
+                ? contractText.substring(0, 60000) : contractText;
         String prompt = """
               ROLE:
                      You are a Senior Legal Document Analyst. Your goal is accuracy first, then risk analysis.

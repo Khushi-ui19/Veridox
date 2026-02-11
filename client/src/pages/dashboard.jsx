@@ -21,7 +21,8 @@ import {
     FaSearch,
     FaCalendarCheck,
     FaInfinity,
-    FaArrowRight
+    FaArrowRight,
+    FaInfoCircle
 } from 'react-icons/fa';
 
 // --- GLASSMORPHISM STYLE ---
@@ -336,6 +337,14 @@ const Dashboard = () => {
                                     <h5 className="fw-bold mb-0 text-dark"><FaUpload className="me-2 text-primary" />Quick Upload</h5>
                                     {selectedFile && <Badge bg="success">File Selected</Badge>}
                                 </div>
+                                {/* --- 2. NEW INDICATOR TAB ADDED HERE --- */}
+                            <Alert variant="info" className="py-2 px-3 small border-0 bg-opacity-10 shadow-sm d-flex align-items-center mb-3">
+                                <FaInfoCircle className="me-2 flex-shrink-0" size={16} />
+                                <span>
+                                    <strong>Limits:</strong> Max File Size: <strong>20MB</strong> | Max Length: <strong>~50 Pages</strong>
+                                </span>
+                            </Alert>
+                            {/* ------------------------------------- */}
 
                                 {/* --- UPLOAD CONTROLS --- */}
                                 <div className="d-flex flex-column gap-3">
