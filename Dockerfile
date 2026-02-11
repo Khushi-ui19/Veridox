@@ -48,4 +48,4 @@ COPY tessdata ./tessdata
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-Xmx400m", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Xmx400m", "-Dspring.servlet.multipart.max-file-size=50MB", "-Dspring.servlet.multipart.max-request-size=50MB", "-jar", "app.jar"]
