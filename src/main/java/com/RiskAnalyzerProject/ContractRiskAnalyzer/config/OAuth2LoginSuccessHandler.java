@@ -8,6 +8,8 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -56,9 +58,17 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 String targetUrl = FRONTEND_URL + "/login?error=user_exists";
                 getRedirectStrategy().sendRedirect(request, response, targetUrl);
             } else {
-                String token = jwtUtil.generateToken(existingUser.get().getUsername());
+                String jwt = jwtUtil.generateToken(existingUser.get().getUsername());
+                ResponseCookie jwtCookie = ResponseCookie.from("jwtToken", jwt)
+                        .httpOnly(true)
+                        .secure(false) // <--- Set to false for local testing (change to true for Koyeb)
+                        .path("/")
+                        .maxAge(24 * 60 * 60)
+                        .sameSite("Lax")
+                        .build();
+                response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
                 // Redirect to /login on the SAME domain
-                String targetUrl = FRONTEND_URL + "/login?token=" + token;
+                String targetUrl = FRONTEND_URL + "/login?token=oauth2_success";
                 getRedirectStrategy().sendRedirect(request, response, targetUrl);
             }
         } else {

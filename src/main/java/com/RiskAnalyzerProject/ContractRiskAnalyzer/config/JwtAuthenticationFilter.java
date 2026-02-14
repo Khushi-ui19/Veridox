@@ -71,10 +71,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // 2. Validate Token and Load User (Only if we successfully extracted a username)
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-            // Double check validity (including expiration again, just to be safe)
-            try {
+            try { // <--- ADD THIS TRY BLOCK
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+
+                // Double check validity
                 if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities());
@@ -84,6 +85,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     // 3. Authenticate the user in Spring Security Context
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
+
+            } catch (org.springframework.security.core.userdetails.UsernameNotFoundException e) {
+                // --- NEW CATCH BLOCK ---
+                // The token cryptographically passed, but the user was deleted from the database!
+                System.out.println("User no longer exists in DB: " + e.getMessage());
+                // By doing nothing here, SecurityContextHolder remains null.
+                // Spring Security will automatically block the request and return a 401 Unauthorized.
+
             } catch (Exception e) {
                 System.out.println("Token validation failed: " + e.getMessage());
             }
