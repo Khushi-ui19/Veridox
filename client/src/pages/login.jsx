@@ -42,7 +42,6 @@ const Login = () => {
         const token = params.get('token');
         const error = params.get('error');
         if (token) {
-            localStorage.setItem('jwtToken', token);
             localStorage.setItem('lastActive', Date.now().toString());
             toast.success("Login Successful via Google!");
             navigate('/dashboard');
@@ -113,8 +112,9 @@ const Login = () => {
     const handleVerify = async (e) => {
         e.preventDefault();
         try {
-            const response = await api.post(`/auth/login/verify?username=${username}&otp=${otp}`);
-            localStorage.setItem('jwtToken', response.data.token);
+            await api.post(`/auth/login/verify?username=${username}&otp=${otp}`);
+
+            localStorage.setItem('lastActive', Date.now().toString());
             toast.success("Login Successful!");
             navigate('/dashboard');
         } catch (err) {

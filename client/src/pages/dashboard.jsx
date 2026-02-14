@@ -240,7 +240,6 @@ const Dashboard = () => {
 
     const handleLogout = async () => {
         try { await api.post('/auth/logout'); } catch (e) { }
-        localStorage.removeItem('jwtToken');
         localStorage.removeItem('lastActive');
         navigate('/');
         toast.success("Logout Successful!")

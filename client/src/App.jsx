@@ -15,8 +15,8 @@ import CompleteRegistration from './pages/completeRegistration';
 import AutoLogout from './pages/AutoLogout';
 
 const PrivateRoute = ({ children }) => {
-    const token = localStorage.getItem('jwtToken');
-    return token ? children : <Navigate to="/login" />;
+    const isAuthenticated = localStorage.getItem('lastActive');
+    return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
 function App() {

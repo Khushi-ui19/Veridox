@@ -14,6 +14,9 @@ import java.security.Principal;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.HttpHeaders;
+import jakarta.servlet.http.Cookie;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -65,15 +68,32 @@ public class AuthController {
     @PostMapping("/login/verify")
     public ResponseEntity<?> verifyLogin(@RequestParam String username, @RequestParam String otp) {
             String jwt = authService.verifyLoginOtp(username, otp);
+            ResponseCookie jwtCookie = ResponseCookie.from("jwtToken", jwt)
+                .httpOnly(true)
+                .secure(true) // Set to true for HTTPS (Koyeb/Prod)
+                .path("/")    // Available to all endpoints
+                .maxAge(24 * 60 * 60) // Expires in 1 day
+                .sameSite("Lax") // Good for security
+                .build();
             Map<String, String> response = new HashMap<>();
-            response.put("token", jwt);
             response.put("message", "Login Successful");
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
+                .body(response);
          }
     @PostMapping("/logout")
     public ResponseEntity<String> logoutUser(HttpServletRequest request, HttpServletResponse response) {
         authService.logOutUser(request, response);
-        return ResponseEntity.ok("Logout Successful");
+        ResponseCookie deleteCookie = ResponseCookie.from("jwtToken", "")
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(0) // 0 means delete immediately
+                .sameSite("Lax")
+                .build();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
+                .body("Logout Successful");
     }
 
     @GetMapping("/profile")

@@ -7,9 +7,13 @@ const AutoLogout = () => {
     // 30 Minutes in milliseconds (30 * 60 * 1000)
     const TIMEOUT_DURATION = 30 * 60 * 1000;
 
-    const logoutUser = useCallback(() => {
+    const logoutUser = useCallback(async() => {
+        try {
+            await api.post('/auth/logout');
+        } catch (error) {
+            console.error("Logout API failed", error);
+        }
         // 1. Clear Data
-        localStorage.removeItem('jwtToken');
         localStorage.removeItem('lastActive');
 
         // 2. Alert User
@@ -20,11 +24,10 @@ const AutoLogout = () => {
     }, [navigate]);
 
     const checkInactivity = useCallback(() => {
-        const token = localStorage.getItem('jwtToken');
         const lastActive = localStorage.getItem('lastActive');
 
         // Only check if user is currently logged in
-        if (token && lastActive) {
+        if (lastActive) {
             const now = Date.now();
             const timeSinceLastActive = now - parseInt(lastActive, 10);
 
@@ -37,7 +40,7 @@ const AutoLogout = () => {
 
     const updateLastActive = () => {
         // Update the timestamp to "Now" whenever the user does something
-        if (localStorage.getItem('jwtToken')) {
+        if (localStorage.getItem('lastActive')) {
             localStorage.setItem('lastActive', Date.now().toString());
         }
     };

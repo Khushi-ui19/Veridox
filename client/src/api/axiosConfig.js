@@ -3,22 +3,12 @@ import { toast } from 'react-toastify';
 
 const api = axios.create({
     baseURL: '/api',
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     }
 });
 
-// Automatically add Token to every request
-api.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('jwtToken');
-        if (token) {
-            config.headers['Authorization'] = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => Promise.reject(error)
-);
 // Response Interceptor (NEW: Handles Global Errors)
 api.interceptors.response.use(
     (response) => response,
@@ -34,17 +24,15 @@ api.interceptors.response.use(
         }
 
         // 2. Handle 401 Unauthorized (Token Expired/Invalid)
-        if (response && response.status === 401) {
-            // Only redirect if not already on login page to avoid loops
-            if (!window.location.pathname.includes('/login')) {
-                toast.error("Session expired. Please login again.");
-                localStorage.removeItem('jwtToken');
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 1500);
-                return Promise.reject(error);
-            }
-        }
+       if (response && response.status === 401) {
+           if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+               sessionStorage.setItem('db_wiped_alert', 'true');
+               // We no longer need to clear the token from localStorage
+               // The browser will handle the expired cookie automatically
+
+               window.location.href = '/register';
+           }
+       }
 
         // 3. Handle 403 Forbidden
         if (response && response.status === 403) {
@@ -52,7 +40,7 @@ api.interceptors.response.use(
         }
 
         // 4. Return rejection so local components can still handle specific cases if needed
-        return Promise.reject(new Error(errorMessage));
+        return Promise.reject(error);
     }
 );
 
