@@ -17,7 +17,8 @@ public class Contract {
     private String jurisdiction;
     private String contractType;
     private String status;
-
+    private Long fileSize;   // Size in bytes
+    private Integer pageCount;
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 

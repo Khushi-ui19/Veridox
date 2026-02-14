@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import api, { deleteContract } from '../api/axiosConfig';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { PDFDocument } from 'pdf-lib';
 import { Container, Button, Row, Col, Card, Form, ProgressBar, Badge, Modal, Dropdown, Alert, InputGroup } from 'react-bootstrap';
 import {
     FaCheckCircle,
@@ -22,7 +23,8 @@ import {
     FaCalendarCheck,
     FaInfinity,
     FaArrowRight,
-    FaInfoCircle
+    FaInfoCircle,
+    FaEye
 } from 'react-icons/fa';
 
 // --- GLASSMORPHISM STYLE ---
@@ -55,6 +57,7 @@ const Dashboard = () => {
 
     // File Upload State
     const [selectedFile, setSelectedFile] = useState(null);
+    const [fileStats, setFileStats] = useState(null);
     const fileInputRef = useRef(null);
 
     // Modal State
@@ -148,12 +151,32 @@ const Dashboard = () => {
         }
     };
 
-    const handleFileSelect = (e) => {
+    const handleFileSelect = async (e) => {
         const file = e.target.files[0];
         if (file) {
             setSelectedFile(file);
-        }
-    };
+            setFileStats(null);
+       // ONLY CALCULATE FOR ADMIN
+       if (isAdmin) {
+           const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+
+           // Set temporary loading state
+           setFileStats({ size: sizeMB, pages: "Calculating..." });
+
+           try {
+               // Load PDF to count pages
+               const arrayBuffer = await file.arrayBuffer();
+               const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+               const pageCount = pdfDoc.getPageCount();
+
+               setFileStats({ size: sizeMB, pages: pageCount });
+           } catch (err) {
+               // Fallback if file is encrypted or not a valid PDF
+               setFileStats({ size: sizeMB, pages: "Unknown (Scan/Locked)" });
+           }
+       }
+   }
+           };
 
     // --- UPDATED UPLOAD HANDLER (ASYNC POLLING) ---
     const handleUpload = async () => {
@@ -397,6 +420,14 @@ const Dashboard = () => {
                                             {uploading ? <><FaRobot className="me-2 pulse" /> Analyzing</> : "Analyze"}
                                         </Button>
                                     </div>
+                                    {isAdmin && fileStats && (
+                                        <div className="mt-2 text-dark bg-warning bg-opacity-10 p-2 rounded border border-warning d-flex align-items-center small">
+                                            <FaEye className="me-2 text-warning" />
+                                            <span className="fw-bold me-2">ADMIN PREVIEW:</span>
+                                            <span className="me-3">Size: <strong>{fileStats.size} MB</strong></span>
+                                            <span>Pages: <strong>{fileStats.pages}</strong></span>
+                                        </div>
+                                    )}
                                 </div>
                                 {uploading && <ProgressBar animated now={100} className="mt-3" style={{ height: '4px' }} />}
                             </Card.Body>
@@ -480,36 +511,50 @@ const Dashboard = () => {
                                                 <FaUser className="me-1" /> {contract.ownerUsername}
                                             </div>
                                         )}
+                {/* --- NEW: ADMIN-ONLY STATS ON CARD --- */}
+                    {isAdmin && contract.fileSize && (
+                        <div className="mb-3 d-flex gap-3 text-muted" style={{ fontSize: '0.75rem' }}>
+                            <div className="d-flex align-items-center bg-warning bg-opacity-10 px-2 py-1 rounded">
+                                <span className="fw-bold text-dark me-1">Size:</span>
+                                {(contract.fileSize / (1024 * 1024)).toFixed(2)} MB
+                            </div>
+                            {contract.pageCount !== null && (
+                                <div className="d-flex align-items-center bg-warning bg-opacity-10 px-2 py-1 rounded">
+                                    <span className="fw-bold text-dark me-1">Pages:</span>
+                                    {contract.pageCount}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                <Card.Text className="text-muted small mb-4">
+                    <FaClock className="me-1" />
+                    {new Date(contract.uploadDate).toLocaleDateString()}
+                </Card.Text>
 
-                                        <Card.Text className="text-muted small mb-4">
-                                            <FaClock className="me-1" />
-                                            {new Date(contract.uploadDate).toLocaleDateString()}
-                                        </Card.Text>
-
-                                        <div className="mt-auto d-grid gap-2">
-                                            <Button
-                                                variant="outline-primary"
-                                                size="sm"
-                                                className="rounded-pill fw-semibold"
-                                                disabled={isProcessing} // Disable if processing
-                                                onClick={() => navigate(`/contracts/${contract.id}`)}
-                                            >
-                                                View Report <FaArrowRight className="ms-1" size={10} />
-                                            </Button>
-                                            <div className="d-flex gap-2">
-                                                <Button variant="primary" size="sm" className="flex-grow-1 rounded-pill fw-semibold shadow-sm" onClick={() => navigate(`/chat/${contract.id}`)}>
-                                                    <FaComments className="me-1" /> Chat
-                                                </Button>
-                                                <Button variant="light" size="sm" className="rounded-circle text-danger shadow-sm" onClick={(e) => handleDeleteClick(contract.id, e)} title="Delete">
-                                                    <FaTrash />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
-                        );
-                    })}
+                <div className="mt-auto d-grid gap-2">
+                    <Button
+                        variant="outline-primary"
+                        size="sm"
+                        className="rounded-pill fw-semibold"
+                        disabled={isProcessing} // Disable if processing
+                        onClick={() => navigate(`/contracts/${contract.id}`)}
+                    >
+                        View Report <FaArrowRight className="ms-1" size={10} />
+                    </Button>
+                    <div className="d-flex gap-2">
+                        <Button variant="primary" size="sm" className="flex-grow-1 rounded-pill fw-semibold shadow-sm" onClick={() => navigate(`/chat/${contract.id}`)}>
+                            <FaComments className="me-1" /> Chat
+                        </Button>
+                        <Button variant="light" size="sm" className="rounded-circle text-danger shadow-sm" onClick={(e) => handleDeleteClick(contract.id, e)} title="Delete">
+                            <FaTrash />
+                        </Button>
+                    </div>
+                </div>
+            </Card.Body>
+        </Card>
+    </Col>
+);
+})}
                 </Row>
 
             </Container>

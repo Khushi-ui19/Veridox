@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.Loader;
 
 @Service
 public class ContractService {
@@ -57,6 +59,7 @@ public class ContractService {
         contract.setJurisdiction(jurisdiction);
         contract.setContractType(contractType);
         contract.setStatus("PROCESSING"); // <--- Set Status
+        contract.setFileSize(file.getSize());
 
         Contract savedContract = contractRepository.save(contract);
 
@@ -73,6 +76,12 @@ public class ContractService {
         if (contract == null) return;
 
         try {
+            // --- CALCULATE PAGE COUNT ---
+            try (PDDocument doc = Loader.loadPDF(fileBytes)) {
+                contract.setPageCount(doc.getNumberOfPages());
+            } catch (Exception e) {
+                logger.warn("Could not count pages for contract: " + contractId);
+            }
             // Heavy Lifting (OCR + AI)
             String text = pdfService.extractTextFromBytes(fileBytes);
             String analysis = aiAnalysis.AnalysisContract(text, contract.getJurisdiction(), contract.getContractType());
