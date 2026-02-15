@@ -61,12 +61,7 @@ public class ContractService {
         contract.setStatus("PROCESSING"); // <--- Set Status
         contract.setFileSize(file.getSize());
 
-        Contract savedContract = contractRepository.save(contract);
-
-        // Start Background Thread (Fire and Forget)
-        processAsync(savedContract.getId(), file.getBytes());
-
-        return savedContract;
+        return contractRepository.save(contract);
     }
 
     // 2. SLOW METHOD: Runs in background

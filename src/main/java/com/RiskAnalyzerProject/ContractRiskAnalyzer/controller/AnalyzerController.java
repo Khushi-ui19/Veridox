@@ -81,8 +81,17 @@ public class AnalyzerController {
             @RequestParam(value = "jurisdiction", defaultValue = "General") String jurisdiction,
             @RequestParam(value = "contractType", defaultValue = "General Contract") String contractType) throws IOException {
 
-        // Calls the FAST method now
+        // 1. Extract bytes IMMEDIATELY before the HTTP request closes
+        byte[] fileBytes = file.getBytes();
+
+        // 2. Create the "PROCESSING" ticket in the database (Synchronous, takes 50 milliseconds)
         Contract savedContract = contractService.initiateContractAnalysis(file, principal.getName(), jurisdiction, contractType);
+
+        // 3. Hand off the heavy OCR/AI task to the background thread!
+        // Because the Controller is calling this from the outside, Spring will properly put it on a new thread.
+        contractService.processAsync(savedContract.getId(), fileBytes);
+
+        // 4. Return 200 OK instantly. Koyeb will no longer timeout!
         return ResponseEntity.ok(savedContract);
     }
     @PostMapping("/chat")
