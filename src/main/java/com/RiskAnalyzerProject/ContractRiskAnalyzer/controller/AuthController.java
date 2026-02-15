@@ -139,7 +139,16 @@ public class AuthController {
         // (This handles the case where a previous attempt created the user but failed to redirect)
         if (authService.emailExists(request.getEmail())) { // You might need to add this method to AuthService or use UserRepository directly
             String token = jwtUtil.generateToken(request.getEmail()); // Use email or fetch actual username
-            return ResponseEntity.ok(Map.of("token", token));
+            ResponseCookie existingUserCookie = ResponseCookie.from("jwtToken", token)
+                    .httpOnly(true)
+                    .secure(true) // NOTE: Change to false if testing on localhost HTTP!
+                    .path("/")
+                    .maxAge(24 * 60 * 60)
+                    .sameSite("Lax")
+                    .build();
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, existingUserCookie.toString())
+                    .body(Map.of("message", "Login Successful"));
         }
 
         // 3. Determine Password (User provided OR Dummy)
@@ -160,7 +169,18 @@ public class AuthController {
         // 6. Generate Real Login Token
         String token = jwtUtil.generateToken(user.getUsername());
 
-        return ResponseEntity.ok(Map.of("token", token));
+        ResponseCookie newUserCookie = ResponseCookie.from("jwtToken", token)
+                .httpOnly(true)
+                .secure(true) // NOTE: Change to false if testing on localhost HTTP!
+                .path("/")
+                .maxAge(24 * 60 * 60)
+                .sameSite("Lax")
+                .build();
+
+        // 8. Attach the cookie to the response
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, newUserCookie.toString())
+                .body(Map.of("message", "Registration and Login Successful"));
     }
     @PostMapping("/delete-account")
     public ResponseEntity<?> deleteMyAccount(@RequestBody Map<String, String> request, Principal principal) {

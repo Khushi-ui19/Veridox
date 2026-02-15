@@ -1,11 +1,16 @@
 package com.RiskAnalyzerProject.ContractRiskAnalyzer;
 
+import com.RiskAnalyzerProject.ContractRiskAnalyzer.controller.AuthController;
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.dto.LoginRequest;
+import com.RiskAnalyzerProject.ContractRiskAnalyzer.model.User;
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.service.AuthService;
+import com.RiskAnalyzerProject.ContractRiskAnalyzer.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
@@ -20,11 +25,11 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
+//@SpringBootTest
+@WebMvcTest(AuthController.class)
+@AutoConfigureMockMvc(addFilters = false)
 public class AuthControllerTest {
 
     @Autowired
@@ -35,7 +40,13 @@ public class AuthControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper; // Converts Objects to JSON
+    @MockitoBean
+    private JwtUtil jwtUtil;
+    @MockitoBean
+    private com.RiskAnalyzerProject.ContractRiskAnalyzer.service.UserDetailsServiceImpl userDetailsService;
 
+    @MockitoBean
+    private com.RiskAnalyzerProject.ContractRiskAnalyzer.service.TokenBlacklistService tokenBlacklistService;
     @Test
     public void testLoginSuccess() throws Exception {
         // 1. SETUP: Prepare Request
@@ -92,6 +103,54 @@ public class AuthControllerTest {
                         .content(jsonRequest))
                 .andExpect(status().isOk()); // Now it will be 200 OK
     }
+    @Test
+    public void testCompleteOAuthRegistration_NewUser_ReturnsHttpOnlyCookie() throws Exception {
+        // 1. SETUP: Define the test data
+        String tempToken = "dummy-temp-token";
+        String email = "newuser@example.com";
+        String username = "newuser";
+        String expectedJwt = "secure-mocked-jwt-token";
 
+        // Tell JwtUtil to accept the temp token as valid
+        Mockito.when(jwtUtil.validateToken(tempToken, email)).thenReturn(true);
 
+        // Tell AuthService this is a brand new user (doesn't exist yet)
+        Mockito.when(authService.emailExists(email)).thenReturn(false);
+
+        // Mock the final login JWT generation
+        Mockito.when(jwtUtil.generateToken(username)).thenReturn(expectedJwt);
+
+        // Do nothing when saving the user to the database (since we don't want to actually touch MongoDB)
+        Mockito.doNothing().when(authService).registerOAuthUser(any(User.class));
+
+        // Create the JSON payload that your React Complete Registration form would send
+        String requestPayload = """
+            {
+                "tempToken": "dummy-temp-token",
+                "email": "newuser@example.com",
+                "username": "newuser",
+                "password": "securepassword123"
+            }
+        """;
+
+        // 2. EXECUTE & ASSERT
+        mockMvc.perform(post("/api/auth/oauth-complete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestPayload))
+
+                // Verify the HTTP Status is 200 OK
+                .andExpect(status().isOk())
+
+                // Verify the JSON response body
+                .andExpect(jsonPath("$.message").value("Registration and Login Successful"))
+
+                // THE MOST IMPORTANT PART: Verify the HttpOnly Cookie is attached exactly right!
+                .andExpect(cookie().exists("jwtToken"))
+                .andExpect(cookie().value("jwtToken", expectedJwt))
+                .andExpect(cookie().httpOnly("jwtToken", true))
+                .andExpect(cookie().secure("jwtToken", true)); // ** NOTE: Change to false if your controller is currently set to false for local testing!
+
+        // 3. VERIFY: Ensure the database save method was actually triggered
+        Mockito.verify(authService, Mockito.times(1)).registerOAuthUser(any(User.class));
+    }
 }
