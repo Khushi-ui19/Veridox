@@ -20,7 +20,7 @@ import jakarta.servlet.http.Cookie;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = {"http://localhost:5173", "https://www.google.com/search?q=https://your-project-name.vercel.app"}, allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:5173", "https://contract-risk-analyzer-theta.vercel.app"}, allowCredentials = "true")
 public class AuthController {
 
     @Autowired

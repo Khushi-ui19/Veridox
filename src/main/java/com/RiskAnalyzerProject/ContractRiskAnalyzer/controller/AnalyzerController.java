@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/contracts")
-@CrossOrigin(origins = {"http://localhost:5173", "https://www.google.com/search?q=https://your-project-name.vercel.app"}, allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:5173", "https://contract-risk-analyzer-theta.vercel.app"}, allowCredentials = "true")
 public class AnalyzerController {
 
     @Autowired
