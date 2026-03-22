@@ -2,7 +2,7 @@
 
 An AI-powered web application designed to help users upload, scan, and analyze legal contracts (PDFs) for potential risks, compliance issues, and key terms. Built with a decoupled **React (Vite)** frontend and a **Spring Boot** backend, utilizing **Tesseract OCR** and Large Language Models for deep analysis.
 
-# Live Link: (https://intellectual-wilona-animeshj425-62b84662.koyeb.app/)
+# Live Link: (https://contract-risk-analyzer-theta.vercel.app/)
 ---
 
 ## ✨ Key Features
