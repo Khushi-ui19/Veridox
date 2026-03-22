@@ -153,10 +153,10 @@ if (!loading && contract && contract.status === 'PROCESSING') {
                 {/* --- RESPONSIVE HEADER --- */}
                 {/* Stack buttons on mobile */}
                 <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
-                    <Button variant="white" className="shadow-sm rounded-pill px-3 fw-bold text-muted border w-100 w-md-auto" onClick={() => navigate('/dashboard')}>
+                    <Button variant="white" className="shadow-sm rounded-pill px-3 fw-bold text-muted border w-100 w-md-auto-custom" onClick={() => navigate('/dashboard')}>
                         <FaArrowLeft className="me-2" /> Back to Dashboard
                     </Button>
-                    <div className="d-flex flex-column flex-sm-row gap-2 w-100 w-md-auto">
+                    <div className="d-flex flex-column flex-sm-row gap-2 w-100 w-md-auto-custom">
                         <Button variant="success" className="shadow-sm rounded-pill fw-bold flex-grow-1" onClick={handleDownloadAnalysis}>
                             <FaDownload className="me-2" /> Download Report
                         </Button>
@@ -183,7 +183,7 @@ if (!loading && contract && contract.status === 'PROCESSING') {
                             </Col>
 
                             {/* Risk Score (Centered on mobile) */}
-                            <Col xs={12} md={4} className="text-center border-start-md border-secondary border-opacity-10 pt-3 pt-md-0">
+                            <Col xs={12} md={4} className="text-center border-md-start border-secondary border-opacity-10 pt-3 pt-md-0">
                                 <h6 className="text-muted text-uppercase fw-bold mb-3 small ls-1">Risk Assessment</h6>
                                 <div className="position-relative d-inline-flex align-items-center justify-content-center mb-3"
                                          style={{

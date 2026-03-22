@@ -317,7 +317,7 @@ const Dashboard = () => {
                         <p className="text-muted mb-0 ms-1">Welcome back, <span className="fw-bold text-primary">{user.username}</span></p>
                     </div>
 
-                    <div className="d-flex gap-2 w-100 w-md-auto justify-content-center justify-content-md-end">
+                    <div className="d-flex flex-wrap gap-2 w-100 w-md-auto-custom justify-content-center justify-content-md-end">
                         <Button
                             variant="white"
                             className="shadow-sm rounded-pill fw-bold d-flex align-items-center justify-content-center flex-grow-0 px-3"
@@ -327,7 +327,7 @@ const Dashboard = () => {
                         >
                             {theme === 'dark' ? <FaSun /> : <FaMoon />}
                         </Button>
-                        <Button variant="white" className="shadow-sm rounded-pill fw-bold text-primary border flex-grow-1 flex-md-grow-0" onClick={() => navigate('/chat/general')}>
+                        <Button variant="white" className="shadow-sm rounded-pill fw-bold text-primary border flex-grow-1 flex-md-grow-0-custom" onClick={() => navigate('/chat/general')}>
                             <FaComments className="me-2" /> AI Chat
                         </Button>
 

@@ -60,7 +60,7 @@ const Home = () => {
                     </Navbar.Brand>
 
                     {/* Buttons: Right Aligned on Desktop, Center on Mobile */}
-                    <div className="d-flex gap-2 w-100 w-md-auto justify-content-center justify-content-md-end">
+                    <div className="d-flex flex-wrap gap-2 w-100 w-md-auto-custom justify-content-center justify-content-md-end">
                         <Button
                             variant="white"
                             className="px-3 fw-bold d-flex align-items-center justify-content-center flex-grow-0"
@@ -73,15 +73,15 @@ const Home = () => {
                         </Button>
                         {!isLoggedIn ? (
                             <>
-                                <Button variant="outline-primary" className="px-4 fw-bold flex-grow-1 flex-md-grow-0" onClick={() => navigate('/login')} style={{ borderRadius: '50px' }}>
+                                <Button variant="outline-primary" className="px-4 fw-bold flex-grow-1 flex-md-grow-0-custom" onClick={() => navigate('/login')} style={{ borderRadius: '50px' }}>
                                     Login
                                 </Button>
-                                <Button variant="primary" className="px-4 fw-bold flex-grow-1 flex-md-grow-0" onClick={() => navigate('/register')} style={{ borderRadius: '50px' }}>
+                                <Button variant="primary" className="px-4 fw-bold flex-grow-1 flex-md-grow-0-custom" onClick={() => navigate('/register')} style={{ borderRadius: '50px' }}>
                                     Get Started
                                 </Button>
                             </>
                         ) : (
-                            <Button variant="primary" className="px-4 fw-bold shadow-lg w-100 w-md-auto" onClick={() => navigate('/dashboard')} style={{ borderRadius: '50px' }}>
+                            <Button variant="primary" className="px-4 fw-bold shadow-lg w-100 w-md-auto-custom" onClick={() => navigate('/dashboard')} style={{ borderRadius: '50px' }}>
                                 Go to Dashboard <FaArrowRight className="ms-2" />
                             </Button>
                         )}
@@ -91,7 +91,7 @@ const Home = () => {
 
             {/* --- 2. HERO SECTION --- */}
             {/* Added marginTop to prevent Navbar overlap */}
-            <Container className="app-page-content flex-grow-1 d-flex align-items-center justify-content-center py-5" style={{ marginTop: '100px' }}>
+            <Container className="app-page-content home-hero-offset flex-grow-1 d-flex align-items-center justify-content-center py-5">
                 <Row className="align-items-center w-100 g-5">
                     <Col lg={6} className="mb-5 mb-lg-0 text-center text-lg-start">
                         <Badge bg="primary" className="mb-3 px-3 py-2 rounded-pill fw-normal" style={{ letterSpacing: '1px' }}>

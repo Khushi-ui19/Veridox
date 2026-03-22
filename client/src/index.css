@@ -992,6 +992,24 @@ body.is-scrolling .navbar {
   background: #0069d9;
 }
 
+.home-hero-offset {
+  margin-top: 100px;
+}
+
+@media (min-width: 768px) {
+  .w-md-auto-custom {
+    width: auto !important;
+  }
+
+  .flex-md-grow-0-custom {
+    flex-grow: 0 !important;
+  }
+
+  .border-md-start {
+    border-left: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color) !important;
+  }
+}
+
 @media (max-width: 992px) {
   .blob-lg {
     width: 360px;
@@ -1005,6 +1023,10 @@ body.is-scrolling .navbar {
 }
 
 @media (max-width: 768px) {
+  .home-hero-offset {
+    margin-top: 138px;
+  }
+
   h1.display-3 {
     font-size: 2.15rem !important;
   }
