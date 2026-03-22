@@ -2,28 +2,27 @@ import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import { Container, Button, Card, Form, Badge, Spinner } from 'react-bootstrap';
-import { FaArrowLeft, FaRobot, FaUser, FaPaperPlane, FaClock, FaComments, FaFileContract } from 'react-icons/fa';
+import { FaArrowLeft, FaRobot, FaUser, FaArrowUp, FaClock, FaComments, FaFileContract, FaTrashAlt } from 'react-icons/fa';
 
-// --- GLASSMORPHISM STYLE ---
+// --- THEME PANEL STYLE ---
 const glassStyle = {
-    background: 'rgba(255, 255, 255, 0.85)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    border: '1px solid rgba(255, 255, 255, 0.5)',
-    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)'
+    background: 'var(--glass-surface)',
+    border: '1px solid var(--glass-border)',
+    boxShadow: 'var(--glass-shadow)'
 };
 
 const Chat = () => {
     // --- 1. YOUR ORIGINAL LOGIC ---
     const { contractId } = useParams();
     const isGeneral = contractId === 'general';
-
-    const [messages, setMessages] = useState([{
+    const getWelcomeMessage = () => ({
         sender: 'ai',
         text: isGeneral
             ? 'Hello! I am your General Legal Assistant. Ask me anything about legal concepts.'
             : 'Hello! I have analyzed this contract. Ask me anything about it.'
-    }]);
+    });
+
+    const [messages, setMessages] = useState([getWelcomeMessage()]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -31,13 +30,41 @@ const Chat = () => {
     const storageKey = `chat_session_${contractId}`;
     const [conversationId, setConversationId] = useState(localStorage.getItem(storageKey) || '');
 
-    const bottomRef = useRef(null);
+    const messagesContainerRef = useRef(null);
+    const inputRef = useRef(null);
     const navigate = useNavigate();
 
-    // Auto-scroll to bottom when messages change
+    // Auto-scroll only the chat list (never the browser page).
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        const container = messagesContainerRef.current;
+        if (!container) return;
+
+        const behavior = 'auto';
+        container.scrollTo({ top: container.scrollHeight, behavior });
     }, [messages]);
+
+    // Keep cursor in chat input after AI responses/clear actions.
+    useEffect(() => {
+        if (!loading) {
+            inputRef.current?.focus();
+        }
+    }, [loading]);
+
+    const persistConversationId = (nextConversationId) => {
+        if (nextConversationId && nextConversationId !== conversationId) {
+            setConversationId(nextConversationId);
+            localStorage.setItem(storageKey, nextConversationId);
+        }
+    };
+
+    const handleClearChat = () => {
+        setMessages([getWelcomeMessage()]);
+        setInput('');
+        setLoading(false);
+        setConversationId('');
+        localStorage.removeItem(storageKey);
+        requestAnimationFrame(() => inputRef.current?.focus());
+    };
 
     const sendMessage = async (e) => {
         e.preventDefault();
@@ -55,13 +82,10 @@ const Chat = () => {
                 conversationId: conversationId
             });
 
-            if (response.data.conversationId && response.data.conversationId !== conversationId) {
-                setConversationId(response.data.conversationId);
-                localStorage.setItem(storageKey, response.data.conversationId);
-            }
+            persistConversationId(response.data.conversationId);
 
             setMessages([...newMessages, { sender: 'ai', text: response.data.response }]);
-        } catch (error) {
+        } catch {
             setMessages([...newMessages, { sender: 'ai', text: "Error: Could not connect to the AI." }]);
         } finally {
             setLoading(false);
@@ -70,21 +94,24 @@ const Chat = () => {
 
     // --- 2. LAYOUT & STYLING ---
     return (
-        <div className="d-flex flex-column"
+        <div className="d-flex flex-column app-theme-page"
              style={{
-                 height: '100vh', // FORCE FULL VIEWPORT HEIGHT
-                 background: 'linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%)',
-                 position: 'relative',
+                 height: '100dvh',
+                 minHeight: '100svh',
                  overflow: 'hidden'
              }}>
 
             {/* Background Blobs */}
-            <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '600px', height: '600px', background: '#6366f1', filter: 'blur(150px)', opacity: '0.15', borderRadius: '50%', zIndex: '0' }}></div>
+            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
+            <div className="background-blob modern-blob blob-rose blob-sm blob-bottom-right"></div>
 
-            <Container className="d-flex flex-column py-3" style={{ zIndex: 1, maxWidth: '900px', height: '100%' }}>
+            <Container
+                className="app-page-content d-flex flex-column py-3 gap-3"
+                style={{ maxWidth: '900px', height: '100%', minHeight: 0, overflow: 'hidden' }}
+            >
 
                 {/* --- HEADER (Fixed Top) --- */}
-                <Card className="mb-3 border-0 flex-shrink-0" style={glassStyle}>
+                <Card className="border-0 flex-shrink-0 chat-shell-card" style={glassStyle}>
                     <Card.Body className="d-flex align-items-center justify-content-between py-2 px-3">
                         <div className="d-flex align-items-center">
                             <Button variant="link" onClick={() => navigate('/dashboard')} className="p-0 text-decoration-none text-muted me-3">
@@ -95,24 +122,38 @@ const Chat = () => {
                                     {isGeneral ? <FaComments className="me-2 text-primary" /> : <FaFileContract className="me-2 text-primary" />}
                                     {isGeneral ? 'General Assistant' : 'Contract Assistant'}
                                 </h6>
-                                {isGeneral && <Badge bg="primary" style={{fontSize: '0.65rem'}}>General Mode</Badge>}
+                                <div className="d-flex align-items-center gap-2 mt-1">
+                                    {isGeneral && <Badge bg="primary" style={{ fontSize: '0.65rem' }}>General Mode</Badge>}
+                                </div>
                             </div>
+                        </div>
+                        <div className="d-flex align-items-center gap-3">
+                            <Button
+                                variant="link"
+                                onClick={handleClearChat}
+                                disabled={loading}
+                                className="p-0 text-decoration-none text-danger d-flex align-items-center justify-content-center"
+                                title="Clear chat"
+                                aria-label="Clear chat"
+                            >
+                                <FaTrashAlt size={18} />
+                            </Button>
                         </div>
                     </Card.Body>
                 </Card>
 
                 {/* --- CHAT AREA (Scrollable Middle) --- */}
-                <Card className="border-0 mb-3 shadow-sm"
+                <Card className="border-0 shadow-sm chat-shell-card"
                       style={{
                           ...glassStyle,
-                          background: 'rgba(255, 255, 255, 0.6)',
+                          background: 'var(--glass-surface-alt)',
                           flexGrow: 1,  // TAKE REMAINING SPACE
                           minHeight: 0, // CRITICAL FOR SCROLLING: Allows container to shrink
                           overflow: 'hidden' // Hide outer scrollbar
                       }}>
-                    <Card.Body className="p-0 d-flex flex-column h-100">
+                    <Card.Body className="p-0 d-flex flex-column h-100 chat-scroll-body" style={{ minHeight: 0 }}>
                         {/* SCROLLABLE DIV */}
-                        <div className="flex-grow-1 overflow-auto p-3" style={{ scrollBehavior: 'smooth' }}>
+                        <div ref={messagesContainerRef} className="flex-grow-1 overflow-auto p-3 chat-messages-scroll">
                             {messages.map((msg, index) => {
                                 const isUser = msg.sender === 'user';
                                 return (
@@ -128,13 +169,13 @@ const Chat = () => {
 
                                         <div
                                             className={`p-3 shadow-sm ${isUser ? 'text-white' : 'text-dark'}`}
-                                            style={{
-                                                maxWidth: '80%',
-                                                borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                                                background: isUser ? 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)' : 'white',
-                                                border: isUser ? 'none' : '1px solid rgba(0,0,0,0.05)'
-                                            }}
-                                        >
+                                             style={{
+                                                 maxWidth: '80%',
+                                                 borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                                                 background: isUser ? 'var(--gradient-accent)' : 'var(--glass-surface)',
+                                                 border: isUser ? 'none' : '1px solid var(--glass-border)'
+                                             }}
+                                         >
                                             <div style={{ whiteSpace: 'pre-wrap', fontSize: '0.9rem', lineHeight: '1.5' }}>
                                                 {msg.text}
                                             </div>
@@ -165,16 +206,16 @@ const Chat = () => {
                                     </div>
                                 </div>
                             )}
-                            <div ref={bottomRef} />
                         </div>
                     </Card.Body>
                 </Card>
 
                 {/* --- INPUT AREA (Fixed Bottom) --- */}
-                <div style={{ zIndex: 10 }}>
+                <div className="flex-shrink-0" style={{ zIndex: 10 }}>
                     <Form onSubmit={sendMessage}>
                         <div className="position-relative shadow-lg rounded-pill bg-white p-1 d-flex align-items-center border">
                             <Form.Control
+                                ref={inputRef}
                                 type="text"
                                 placeholder={isGeneral ? "Ask a legal question..." : "Ask about this contract..."}
                                 value={input}
@@ -191,7 +232,7 @@ const Chat = () => {
                                 className="rounded-circle position-absolute end-0 me-1 d-flex align-items-center justify-content-center shadow-sm"
                                 style={{ width: 40, height: 40 }}
                             >
-                                {loading ? <Spinner animation="border" size="sm" /> : <FaPaperPlane size={16} className="ms-1" />}
+                                {loading ? <Spinner animation="border" size="sm" /> : <FaArrowUp size={16} />}
                             </Button>
                         </div>
                     </Form>

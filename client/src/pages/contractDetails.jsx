@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
-import { Container, Button, Card, Row, Col, Badge, Spinner, Accordion } from 'react-bootstrap';
+import { Container, Button, Card, Row, Col, Badge, Spinner, Accordion, ProgressBar } from 'react-bootstrap';
 import { FaArrowLeft, FaRobot, FaExclamationTriangle, FaCheckCircle, FaFileAlt, FaListUl, FaDownload } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
-// --- GLASSMORPHISM STYLE ---
+// --- THEME PANEL STYLE ---
 const glassStyle = {
-    background: 'rgba(255, 255, 255, 0.85)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    border: '1px solid rgba(255, 255, 255, 0.5)',
-    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)'
+    background: 'var(--glass-surface)',
+    border: '1px solid var(--glass-border)',
+    boxShadow: 'var(--glass-shadow)'
 };
 
 const ContractDetails = () => {
@@ -90,46 +88,67 @@ const ContractDetails = () => {
     };
 
     if (loading) return (
-        <div className="d-flex justify-content-center align-items-center min-vh-100" style={{ background: '#f3f4f6' }}>
-            <Spinner animation="border" variant="primary" />
+        <div className="d-flex justify-content-center align-items-center min-vh-100 app-theme-page">
+            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
+            <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>
+            <div className="app-page-content">
+                <Spinner animation="border" variant="primary" />
+            </div>
         </div>
     );
 
     if (!contract) return (
-        <div className="text-center mt-5 text-muted">
-            <h3>Contract not found</h3>
-            <Button variant="link" onClick={() => navigate('/dashboard')}>Go Back</Button>
+        <div className="d-flex justify-content-center align-items-center min-vh-100 app-theme-page">
+            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
+            <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>
+            <div className="app-page-content text-center text-muted">
+                <h3>Contract not found</h3>
+                <Button variant="link" onClick={() => navigate('/dashboard')}>Go Back</Button>
+            </div>
         </div>
     );
 
 if (!loading && contract && contract.status === 'PROCESSING') {
+        const processingProgress = Math.max(
+            0,
+            Math.min(99, typeof contract.analysisProgress === 'number' ? contract.analysisProgress : 0)
+        );
         return (
-            <Container className="d-flex flex-column align-items-center justify-content-center text-center" style={{ minHeight: '60vh' }}>
-                <div className="spinner-border text-primary" style={{ width: '4rem', height: '4rem' }} role="status">
-                    <span className="visually-hidden">Loading...</span>
-                </div>
-                <h2 className="mt-4 fw-bold text-dark">Analysis in Progress...</h2>
-                <p className="text-muted fs-5">
-                    Our AI is reading your contract. This usually takes 10-20 seconds.
-                    <br />
-                    Please stay on this page.
-                </p>
-                <Badge bg="info" className="px-3 py-2 rounded-pill">
-                    Status: Processing
-                </Badge>
-            </Container>
+            <div className="min-vh-100 app-theme-page d-flex align-items-center">
+                <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
+                <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>
+                <Container className="app-page-content d-flex flex-column align-items-center justify-content-center text-center" style={{ minHeight: '60vh' }}>
+                    <div className="spinner-border text-primary" style={{ width: '4rem', height: '4rem' }} role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </div>
+                    <h2 className="mt-4 fw-bold text-dark">Analysis in Progress...</h2>
+                    <p className="text-muted fs-5">
+                        Our AI is reading your contract. This usually takes 10-20 seconds.
+                        <br />
+                        Please stay on this page.
+                    </p>
+                    <div className="w-100 mb-3" style={{ maxWidth: '360px' }}>
+                        <div className="d-flex justify-content-between small text-muted mb-2">
+                            <span>Analysis Progress</span>
+                            <span className="fw-bold">{processingProgress}%</span>
+                        </div>
+                        <ProgressBar animated={processingProgress < 100} now={processingProgress} />
+                    </div>
+                    <Badge bg="info" className="px-3 py-2 rounded-pill">
+                        {`Status: Processing (${processingProgress}%)`}
+                    </Badge>
+                </Container>
+            </div>
         );
     }
 
     return (
-        <div className="min-vh-100 fade-in py-4 py-md-5"
-             style={{
-                 background: 'linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%)',
-                 position: 'relative',
-                 overflowX: 'hidden'
-             }}>
+        <div className="min-vh-100 fade-in py-4 py-md-5 app-theme-page" style={{ overflowX: 'hidden' }}>
 
-            <Container style={{ position: 'relative', zIndex: 1 }}>
+            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
+            <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>
+
+            <Container className="app-page-content" style={{ position: 'relative' }}>
 
                 {/* --- RESPONSIVE HEADER --- */}
                 {/* Stack buttons on mobile */}
@@ -167,14 +186,14 @@ if (!loading && contract && contract.status === 'PROCESSING') {
                             <Col xs={12} md={4} className="text-center border-start-md border-secondary border-opacity-10 pt-3 pt-md-0">
                                 <h6 className="text-muted text-uppercase fw-bold mb-3 small ls-1">Risk Assessment</h6>
                                 <div className="position-relative d-inline-flex align-items-center justify-content-center mb-3"
-                                     style={{
-                                         width: 130,
-                                         height: 130,
-                                         borderRadius: '50%',
-                                         border: `8px solid var(--bs-${getVariant(analysis?.risk_level)})`,
-                                         boxShadow: '0 0 20px rgba(0,0,0,0.05)',
-                                         background: '#fff'
-                                     }}>
+                                         style={{
+                                             width: 130,
+                                             height: 130,
+                                             borderRadius: '50%',
+                                             border: `8px solid var(--bs-${getVariant(analysis?.risk_level)})`,
+                                             boxShadow: '0 0 20px rgba(0,0,0,0.05)',
+                                             background: 'var(--bg-chip)'
+                                         }}>
                                     <div className={`display-5 fw-bold text-${getVariant(analysis?.risk_level)}`}>
                                         {analysis?.risk_score || 0}
                                     </div>
@@ -258,7 +277,7 @@ if (!loading && contract && contract.status === 'PROCESSING') {
                                 <FaFileAlt className="me-2" /> Original Contract Content
                             </Card.Header>
                             <Card.Body className="p-0 position-relative bg-white bg-opacity-25">
-                                <div className="p-4 h-100 w-100 position-absolute text-dark"
+                                <div className="p-4 h-100 w-100 position-absolute text-dark contract-raw-scroll"
                                      style={{
                                          overflowY: 'auto',
                                          fontSize: '0.85rem',

@@ -64,13 +64,15 @@ public class AnalyzerController {
         ));
     }
     @GetMapping("/{id}/status")
-    public ResponseEntity<Map<String, String>> getContractStatus(@PathVariable String id, Principal principal) {
+    public ResponseEntity<Map<String, Object>> getContractStatus(@PathVariable String id, Principal principal) {
         Contract contract = contractService.getContractById(id, principal.getName())
                 .orElseThrow(() -> new RuntimeException("Contract not found"));
 
+        int progress = contract.getAnalysisProgress() != null ? contract.getAnalysisProgress() : 0;
         return ResponseEntity.ok(Map.of(
                 "status", contract.getStatus() != null ? contract.getStatus() : "UNKNOWN",
-                "id", contract.getId()
+                "id", contract.getId(),
+                "progress", progress
         ));
     }
 
@@ -106,7 +108,8 @@ public class AnalyzerController {
             String response = contractService.chatWithAi(
                     request.getQuestion(),
                     request.getContractId(),
-                    secureConversationId
+                    secureConversationId,
+                    principal.getName()
             );
             return ResponseEntity.ok(Map.of(
                     "response", response,

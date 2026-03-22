@@ -35,7 +35,7 @@ public class SecurityConfiguration {
                         // 1. Allow Static Resources (React build files)
                         .requestMatchers("/", "/index.html","/assets/**", "/static/**", "/*.js", "/*.css", "/*.ico", "/*.json", "/*.png", "/*.svg").permitAll()
                         // 2. Allow Public Backend Endpoints
-                        .requestMatchers("/api/auth/**", "/api/payment/verify-payment").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         // 3. Authenticate only the API routes
                         .requestMatchers("/api/**").authenticated()

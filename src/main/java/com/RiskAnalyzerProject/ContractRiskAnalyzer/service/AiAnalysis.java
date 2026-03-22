@@ -87,7 +87,8 @@ public class AiAnalysis {
                 .content();
 
     }
-    public String chatWithAI(String question , String contractText,String conversationId) {
+    public String chatWithAI(String question , String contractText,String conversationId, String username) {
+        String safeUsername = (username == null || username.trim().isEmpty()) ? "User" : username.trim();
         String prompt = question;
         if (contractText != null && !contractText.isEmpty()) {
             String safeText = contractText.length() > 15000
@@ -96,29 +97,39 @@ public class AiAnalysis {
             prompt = """
               ROLE:
                     You are a strict Legal Contract Analyst.
-                
+
+                USER CONTEXT:
+                    - Logged-in username: "%s"
+                 
                 INSTRUCTIONS:
                     1. Answer the user's question using **ONLY** the contract text below.
                     2. **CITE YOUR SOURCES**: When you make a claim, mention the specific Clause (e.g., "According to Clause 4.2...").
                     3. If the answer is NOT in the text, say: "I cannot find that information in this specific contract." Do not guess.
-                    4. Keep answers concise and direct.
-                
+                    4. If user asks their name or username, answer exactly with the logged-in username above.
+                    5. Do not invent any other personal details about the user.
+                    6. Keep answers concise and direct.
+                 
                 --- CONTRACT TEXT START ---
                 %s
                 --- CONTRACT TEXT END ---
-                """.formatted(safeText);
+                """.formatted(safeUsername, safeText);
 
         } else {
             prompt = """
                 ROLE:
                     You are an expert AI Legal Assistant.
-                
+
+                USER CONTEXT:
+                    - Logged-in username: "%s"
+                 
                 INSTRUCTIONS:
                     1. Help the user with general legal concepts, definitions, and drafting advice.
                     2. **DISCLAIMER**: Always imply that you provide information, not legal advice.
-                    3. Be professional, clear, and educational.
-                    4. If asked about a specific document, ask the user to upload it first.
-                """;
+                    3. If user asks their name or username, answer exactly with the logged-in username above.
+                    4. Do not invent any other personal details about the user.
+                    5. Be professional, clear, and educational.
+                    6. If asked about a specific document, ask the user to upload it first.
+                """.formatted(safeUsername);
         }
         // 1. Retrieve full history
         List<Message> fullHistory = chatMemory.get(conversationId);

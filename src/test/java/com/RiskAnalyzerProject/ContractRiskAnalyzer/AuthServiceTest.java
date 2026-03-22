@@ -2,8 +2,11 @@ package com.RiskAnalyzerProject.ContractRiskAnalyzer;
 
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.exception.AppException;
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.model.User;
+import com.RiskAnalyzerProject.ContractRiskAnalyzer.repository.ContractRepository;
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.repository.UserRepository;
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.service.AuthService;
+import com.RiskAnalyzerProject.ContractRiskAnalyzer.service.RateLimitingService;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,6 +15,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,6 +31,15 @@ public class AuthServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private ContractRepository contractRepository;
+
+    @Mock
+    private RateLimitingService rateLimitingService;
+
+    @Mock
+    private ChatMemoryRepository chatMemoryRepository;
 
     @InjectMocks
     private AuthService authService;
@@ -83,5 +97,45 @@ public class AuthServiceTest {
         });
 
         assertEquals("OTP has expired. Please request a new one.", exception.getMessage());
+    }
+
+    @Test
+    public void testDeleteUserAccount_CascadeDataCleanup_Success() {
+        User user = new User();
+        user.setUsername("alice");
+        user.setEmail("alice@example.com");
+        user.setPassword("encoded-pass");
+
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("plain-pass", "encoded-pass")).thenReturn(true);
+        when(chatMemoryRepository.findConversationIds())
+                .thenReturn(Arrays.asList("alice_111", "bob_222", null, "alice_333"));
+
+        authService.deleteUserAccount("alice", "plain-pass");
+
+        verify(contractRepository).deleteByOwnerUsername("alice");
+        verify(chatMemoryRepository).deleteByConversationId("alice_111");
+        verify(chatMemoryRepository).deleteByConversationId("alice_333");
+        verify(chatMemoryRepository, never()).deleteByConversationId("bob_222");
+        verify(rateLimitingService).clearUserRateLimit("alice");
+        verify(userRepository).delete(user);
+    }
+
+    @Test
+    public void testDeleteUserAccount_IncorrectPassword_ShouldNotDeleteAnything() {
+        User user = new User();
+        user.setUsername("alice");
+        user.setEmail("alice@example.com");
+        user.setPassword("encoded-pass");
+
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrong-pass", "encoded-pass")).thenReturn(false);
+
+        Exception exception = assertThrows(RuntimeException.class, () ->
+                authService.deleteUserAccount("alice", "wrong-pass"));
+
+        assertEquals("Incorrect password.", exception.getMessage());
+        verifyNoInteractions(contractRepository, rateLimitingService, chatMemoryRepository);
+        verify(userRepository, never()).delete(any());
     }
 }

@@ -3,11 +3,13 @@ package com.RiskAnalyzerProject.ContractRiskAnalyzer.service;
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.exception.AppException;
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.exception.ResourceNotFound;
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.model.User;
+import com.RiskAnalyzerProject.ContractRiskAnalyzer.repository.ContractRepository;
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.repository.UserRepository;
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -42,6 +44,15 @@ public class AuthService {
 
     @Autowired
     private TokenBlacklistService tokenBlacklistService;
+
+    @Autowired
+    private ContractRepository contractRepository;
+
+    @Autowired
+    private RateLimitingService rateLimitingService;
+
+    @Autowired
+    private ChatMemoryRepository chatMemoryRepository;
 
     // --- TEMPORARY STORAGE (RAM) ---
     // Users stay here until they verify OTP. If server restarts, these are lost (which is fine).
@@ -257,8 +268,32 @@ public class AuthService {
     }
 
     public void deleteUserAccount(String username, String password) {
-        User user = userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User not found"));
-        if (!passwordEncoder.matches(password, user.getPassword())) throw new RuntimeException("Incorrect password.");
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new RuntimeException("Incorrect password.");
+        }
+
+        // 1) Delete all uploaded contracts owned by this user
+        contractRepository.deleteByOwnerUsername(username);
+
+        // 2) Delete all persisted chat memory conversations for this user
+        // This app prefixes conversation IDs as "<username>_<uuid>".
+        final String conversationPrefix = username + "_";
+        chatMemoryRepository.findConversationIds().stream()
+                .filter(conversationId -> conversationId != null && conversationId.startsWith(conversationPrefix))
+                .forEach(chatMemoryRepository::deleteByConversationId);
+
+        // 3) Drop in-memory rate-limit bucket for this user
+        rateLimitingService.clearUserRateLimit(username);
+
+        // 4) Remove any pending registration cache entries tied to this user/email
+        pendingRegistrations.remove(user.getEmail());
+        pendingRegistrations.entrySet().removeIf(entry ->
+                entry.getValue() != null && username.equals(entry.getValue().getUsername()));
+
+        // 5) Finally delete user account
         userRepository.delete(user);
     }
 }

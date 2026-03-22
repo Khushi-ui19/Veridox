@@ -40,7 +40,7 @@ api.interceptors.response.use(
         }
 
         // 4. Return rejection so local components can still handle specific cases if needed
-        return Promise.reject(error);
+        return Promise.reject(error.message);
     }
 );
 

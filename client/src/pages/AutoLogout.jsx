@@ -1,6 +1,53 @@
 import { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import api from '../api/axiosConfig';
+
+const createThrottle = (fn, waitMs) => {
+    let lastRun = 0;
+    let timerId = null;
+    let pendingArgs = null;
+
+    const invoke = (args) => {
+        lastRun = Date.now();
+        fn(...args);
+    };
+
+    const throttled = (...args) => {
+        const elapsed = Date.now() - lastRun;
+        const remaining = waitMs - elapsed;
+
+        if (remaining <= 0 || lastRun === 0) {
+            if (timerId) {
+                clearTimeout(timerId);
+                timerId = null;
+            }
+            pendingArgs = null;
+            invoke(args);
+            return;
+        }
+
+        pendingArgs = args;
+        if (!timerId) {
+            timerId = setTimeout(() => {
+                timerId = null;
+                const argsToRun = pendingArgs || [];
+                pendingArgs = null;
+                invoke(argsToRun);
+            }, remaining);
+        }
+    };
+
+    throttled.cancel = () => {
+        if (timerId) {
+            clearTimeout(timerId);
+            timerId = null;
+        }
+        pendingArgs = null;
+    };
+
+    return throttled;
+};
 
 const AutoLogout = () => {
     const navigate = useNavigate();
@@ -38,32 +85,33 @@ const AutoLogout = () => {
         }
     }, [logoutUser, TIMEOUT_DURATION]);
 
-    const updateLastActive = () => {
+    const updateLastActive = useCallback(() => {
         // Update the timestamp to "Now" whenever the user does something
         if (localStorage.getItem('lastActive')) {
             localStorage.setItem('lastActive', Date.now().toString());
         }
-    };
+    }, []);
 
     useEffect(() => {
         // A. Check immediately when the App loads (e.g., user re-opens tab)
         checkInactivity();
 
         // B. Listen for user activity to reset the "lastActive" time
-        const events = ['mousemove', 'keydown', 'click', 'scroll'];
+        const events = ['mousemove', 'keydown', 'click'];
 
-        // We throttle this slightly to avoid writing to localStorage on every pixel move
-        let timeout;
-        const throttledUpdate = () => {
-            if (!timeout) {
-                timeout = setTimeout(() => {
-                    updateLastActive();
-                    timeout = null;
-                }, 1000); // Update max once per second
-            }
-        };
+        let scrollIdleTimer;
+        const throttledUpdate = createThrottle(updateLastActive, 1000);
 
         events.forEach(event => window.addEventListener(event, throttledUpdate));
+        const onScroll = createThrottle(() => {
+            document.body.classList.add('is-scrolling');
+            if (scrollIdleTimer) clearTimeout(scrollIdleTimer);
+            scrollIdleTimer = setTimeout(() => {
+                document.body.classList.remove('is-scrolling');
+            }, 120);
+            throttledUpdate();
+        }, 120);
+        window.addEventListener('scroll', onScroll, { passive: true });
 
         // C. Check periodically (every 1 minute) while the tab is open
         const intervalId = setInterval(checkInactivity, 60000);
@@ -71,10 +119,14 @@ const AutoLogout = () => {
         // Cleanup
         return () => {
             events.forEach(event => window.removeEventListener(event, throttledUpdate));
+            window.removeEventListener('scroll', onScroll);
             clearInterval(intervalId);
-            if (timeout) clearTimeout(timeout);
+            throttledUpdate.cancel();
+            onScroll.cancel();
+            if (scrollIdleTimer) clearTimeout(scrollIdleTimer);
+            document.body.classList.remove('is-scrolling');
         };
-    }, [checkInactivity]);
+    }, [checkInactivity, updateLastActive]);
 
     return null; // This component is invisible
 };

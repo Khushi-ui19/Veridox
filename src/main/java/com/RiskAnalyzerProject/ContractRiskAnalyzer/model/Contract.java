@@ -17,6 +17,7 @@ public class Contract {
     private String jurisdiction;
     private String contractType;
     private String status;
+    private Integer analysisProgress;
     private Long fileSize;   // Size in bytes
     private Integer pageCount;
     public String getStatus() { return status; }

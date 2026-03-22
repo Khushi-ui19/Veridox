@@ -49,8 +49,6 @@ public class RateLimitingService {
                     .addLimit(Bandwidth.classic(10000, Refill.greedy(10000, Duration.ofMinutes(1))))
                     .build();
         } else {
-            // USER: Limited to 2 uploads per 1 hour
-            // Refill.intervally means "refill 2 tokens every 60 minutes"
             return Bucket.builder()
                     .addLimit(Bandwidth.classic(1, Refill.intervally(1, Duration.ofHours(1))))
                     .build();
@@ -60,6 +58,10 @@ public class RateLimitingService {
     public void clearRateLimitCache() {
         cache.clear();
         System.out.println("Rate Limit Cache cleared to free up memory.");
+    }
+
+    public void clearUserRateLimit(String username) {
+        cache.remove(username);
     }
 
 }

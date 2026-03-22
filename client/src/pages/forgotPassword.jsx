@@ -14,13 +14,11 @@ import {
     FaRedo
 } from 'react-icons/fa';
 
-// --- GLASSMORPHISM STYLE ---
+// --- THEME PANEL STYLE ---
 const glassStyle = {
-    background: 'rgba(255, 255, 255, 0.85)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    border: '1px solid rgba(255, 255, 255, 0.5)',
-    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)'
+    background: 'var(--glass-surface)',
+    border: '1px solid var(--glass-border)',
+    boxShadow: 'var(--glass-shadow)'
 };
 
 const ForgotPassword = () => {
@@ -106,18 +104,13 @@ const ForgotPassword = () => {
     };
 
     return (
-        <div className="d-flex justify-content-center align-items-center min-vh-100 fade-in"
-             style={{
-                 background: 'linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%)',
-                 position: 'relative',
-                 overflow: 'hidden'
-             }}>
+        <div className="d-flex justify-content-center align-items-center min-vh-100 fade-in app-theme-page" style={{ overflow: 'hidden' }}>
 
             {/* Background Blobs */}
-            <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '600px', height: '600px', background: '#6366f1', filter: 'blur(150px)', opacity: '0.2', borderRadius: '50%', zIndex: '0' }}></div>
-            <div style={{ position: 'absolute', bottom: '10%', right: '-10%', width: '500px', height: '500px', background: '#10b981', filter: 'blur(150px)', opacity: '0.2', borderRadius: '50%', zIndex: '0' }}></div>
+            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
+            <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>
 
-            <Container style={{ zIndex: 1, maxWidth: '420px' }}>
+            <Container className="app-page-content" style={{ maxWidth: '420px' }}>
                 <Card className="border-0 shadow-lg" style={glassStyle}>
                     <Card.Body className="p-4">
                         <div className="text-start mb-2">

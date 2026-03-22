@@ -10,37 +10,44 @@ import {
     FaFileContract,
     FaCheckCircle,
     FaArrowRight,
-    FaBrain
+    FaBrain,
+    FaMoon,
+    FaSun
 } from 'react-icons/fa';
+import { useTheme } from '../utils/ThemeContext';
 
-// --- GLASSMORPHISM STYLE ---
+// --- THEME PANEL STYLE ---
 const glassStyle = {
-    background: 'rgba(255, 255, 255, 0.75)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.5)',
-    boxShadow: '0 4px 30px rgba(0, 0, 0, 0.05)'
+    background: 'var(--glass-surface-alt)',
+    borderBottom: '1px solid var(--glass-border)',
+    boxShadow: 'var(--shadow-sm)'
 };
 
+const hasActiveSession = () => Boolean(localStorage.getItem('lastActive'));
+
 const Home = () => {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(hasActiveSession);
+    const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
 
     useEffect(() => {
-        const token = localStorage.getItem('jwtToken');
-        setIsLoggedIn(!!token);
+        const syncAuthState = () => setIsLoggedIn(hasActiveSession());
+
+        window.addEventListener('focus', syncAuthState);
+        window.addEventListener('storage', syncAuthState);
+
+        return () => {
+            window.removeEventListener('focus', syncAuthState);
+            window.removeEventListener('storage', syncAuthState);
+        };
     }, []);
 
     return (
-        <div className="min-vh-100 fade-in d-flex flex-column"
-             style={{
-                 background: 'linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%)',
-                 position: 'relative',
-                 overflowX: 'hidden' /* Changed from overflow: hidden to allow scrolling */
-             }}>
+        <div className="min-vh-100 fade-in d-flex flex-column app-theme-page">
 
             {/* Background Blobs */}
-            <div className="background-blob" style={{ position: 'absolute', top: '-10%', left: '-10%', width: '600px', height: '600px', background: '#6366f1', filter: 'blur(150px)', opacity: '0.2', borderRadius: '50%', zIndex: '0' }}></div>
+            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
+            <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>
 
             {/* --- 1. NAVBAR (FIXED TOP & ALIGNED) --- */}
             <Navbar className="fixed-top px-3 px-md-4 py-3" style={{ ...glassStyle, zIndex: 1000 }}>
@@ -54,6 +61,16 @@ const Home = () => {
 
                     {/* Buttons: Right Aligned on Desktop, Center on Mobile */}
                     <div className="d-flex gap-2 w-100 w-md-auto justify-content-center justify-content-md-end">
+                        <Button
+                            variant="white"
+                            className="px-3 fw-bold d-flex align-items-center justify-content-center flex-grow-0"
+                            onClick={toggleTheme}
+                            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                            style={{ borderRadius: '50px' }}
+                        >
+                            {theme === 'dark' ? <FaSun /> : <FaMoon />}
+                        </Button>
                         {!isLoggedIn ? (
                             <>
                                 <Button variant="outline-primary" className="px-4 fw-bold flex-grow-1 flex-md-grow-0" onClick={() => navigate('/login')} style={{ borderRadius: '50px' }}>
@@ -74,7 +91,7 @@ const Home = () => {
 
             {/* --- 2. HERO SECTION --- */}
             {/* Added marginTop to prevent Navbar overlap */}
-            <Container className="flex-grow-1 d-flex align-items-center justify-content-center py-5" style={{ position: 'relative', zIndex: 1, marginTop: '100px' }}>
+            <Container className="app-page-content flex-grow-1 d-flex align-items-center justify-content-center py-5" style={{ marginTop: '100px' }}>
                 <Row className="align-items-center w-100 g-5">
                     <Col lg={6} className="mb-5 mb-lg-0 text-center text-lg-start">
                         <Badge bg="primary" className="mb-3 px-3 py-2 rounded-pill fw-normal" style={{ letterSpacing: '1px' }}>
@@ -82,7 +99,7 @@ const Home = () => {
                         </Badge>
                         <h1 className="display-3 fw-bold mb-4 text-dark lh-sm">
                             Smarter Contracts.<br />
-                            <span className="text-primary" style={{ background: 'linear-gradient(90deg, #4f46e5, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                            <span className="text-primary" style={{ background: 'var(--gradient-accent)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                                 Zero Risk.
                             </span>
                         </h1>
@@ -93,7 +110,7 @@ const Home = () => {
                             <Button size="lg" variant="primary" className="px-5 py-3 shadow-lg fw-bold rounded-pill" onClick={() => navigate(isLoggedIn ? '/dashboard' : '/register')}>
                                 Analyze My Contract
                             </Button>
-                            <Button size="lg" variant="outline-dark" className="px-4 py-3 fw-bold rounded-pill" onClick={() => document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' })}>
+                            <Button size="lg" variant="outline-dark" className="px-4 py-3 fw-bold rounded-pill" onClick={() => document.getElementById('how-it-works').scrollIntoView()}>
                                 How it Works
                             </Button>
                         </div>
@@ -101,7 +118,7 @@ const Home = () => {
 
                     <Col lg={6}>
                         {/* Glassy Hero Card */}
-                        <Card className="border-0 p-4" style={{ background: 'rgba(255, 255, 255, 0.65)', backdropFilter: 'blur(12px)', borderRadius: '16px', transform: 'rotate(-2deg)', boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)' }}>
+                        <Card className="border-0 p-4" style={{ background: 'var(--glass-surface)', border: '1px solid var(--glass-border)', borderRadius: '18px', transform: 'rotate(-1deg)', boxShadow: 'var(--shadow-lg)' }}>
                             <Card.Body>
                                 <div className="d-flex align-items-center mb-4">
                                     <div className="bg-success text-white p-3 rounded-circle me-3">
@@ -145,7 +162,7 @@ const Home = () => {
                             { icon: <FaShieldAlt />, title: "3. Risk Report", desc: "Get an instant summary, risk score, and list of missing clauses." }
                         ].map((step, idx) => (
                             <Col md={4} key={idx}>
-                                <Card className="h-100 text-center p-4 border-0 shadow-sm" style={{ background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(12px)' }}>
+                                <Card className="h-100 text-center p-4 border-0 shadow-sm" style={{ background: 'var(--glass-surface)', border: '1px solid var(--glass-border)' }}>
                                     <div className="mx-auto bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mb-3 shadow-sm" style={{ width: '70px', height: '70px', fontSize: '1.75rem' }}>
                                         {step.icon}
                                     </div>
@@ -159,7 +176,7 @@ const Home = () => {
             </div>
 
             {/* --- 4. TECH STACK INFO --- */}
-            <div className="py-5" style={{ background: 'rgba(255,255,255,0.4)' }}>
+            <div className="py-5" style={{ background: 'var(--bg-soft-section)', borderTop: '1px solid var(--glass-border)', borderBottom: '1px solid var(--glass-border)' }}>
                 <Container>
                     <div className="text-center mb-5">
                         <h6 className="text-primary fw-bold text-uppercase">Under the Hood</h6>
@@ -185,7 +202,7 @@ const Home = () => {
             </div>
 
             {/* --- 5. FOOTER --- */}
-            <footer className="py-4 text-center text-muted small mt-5" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+            <footer className="py-4 text-center text-muted small mt-5" style={{ borderTop: '1px solid rgba(124, 137, 196, 0.22)' }}>
                 <Container>
                     <p className="mb-0">
                         &copy; {new Date().getFullYear()} Contract Risk Analyzer.

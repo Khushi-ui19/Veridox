@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="180" y1="80" x2="1760" y2="980" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#12143B"/>
+      <stop offset="0.52" stop-color="#0A1230"/>
+      <stop offset="1" stop-color="#060816"/>
+    </linearGradient>
+
+    <radialGradient id="violetGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(380 230) rotate(15) scale(500 340)">
+      <stop offset="0" stop-color="#7C5CFF" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#7C5CFF" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="cyanGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1580 860) rotate(-12) scale(560 360)">
+      <stop offset="0" stop-color="#00D5FF" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#00D5FF" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="pinkGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1510 210) rotate(8) scale(360 260)">
+      <stop offset="0" stop-color="#FF4ECD" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#FF4ECD" stop-opacity="0"/>
+    </radialGradient>
+
+    <pattern id="grid" width="84" height="84" patternUnits="userSpaceOnUse">
+      <path d="M84 0H0V84" stroke="#6F82C2" stroke-opacity="0.18" stroke-width="1"/>
+    </pattern>
+
+    <pattern id="stars" width="220" height="220" patternUnits="userSpaceOnUse">
+      <circle cx="18" cy="30" r="1.2" fill="#FFFFFF" fill-opacity="0.75"/>
+      <circle cx="96" cy="66" r="1" fill="#9FD3FF" fill-opacity="0.7"/>
+      <circle cx="172" cy="28" r="0.9" fill="#C9D5FF" fill-opacity="0.8"/>
+      <circle cx="42" cy="156" r="1" fill="#B7C5FF" fill-opacity="0.65"/>
+      <circle cx="128" cy="188" r="1.2" fill="#FFFFFF" fill-opacity="0.72"/>
+      <circle cx="204" cy="144" r="0.8" fill="#9FD3FF" fill-opacity="0.62"/>
+      <circle cx="78" cy="110" r="0.7" fill="#FFFFFF" fill-opacity="0.54"/>
+    </pattern>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <rect width="1920" height="1080" fill="url(#violetGlow)"/>
+  <rect width="1920" height="1080" fill="url(#cyanGlow)"/>
+  <rect width="1920" height="1080" fill="url(#pinkGlow)"/>
+  <rect width="1920" height="1080" fill="url(#grid)"/>
+  <rect width="1920" height="1080" fill="url(#stars)"/>
+
+  <g opacity="0.35">
+    <path d="M0 786C214 720 368 776 544 884C714 990 942 1028 1123 944C1312 856 1502 716 1920 760V1080H0V786Z" fill="url(#violetGlow)"/>
+    <path d="M0 928C208 868 352 908 566 1022C720 1102 948 1130 1120 1068C1332 992 1538 890 1920 924V1080H0V928Z" fill="url(#cyanGlow)"/>
+  </g>
+</svg>

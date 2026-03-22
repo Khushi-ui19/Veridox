@@ -15,13 +15,11 @@ import {
     FaGoogle
 } from 'react-icons/fa';
 
-// --- GLASSMORPHISM STYLE ---
+// --- THEME PANEL STYLE ---
 const glassStyle = {
-    background: 'rgba(255, 255, 255, 0.85)', // Slightly higher opacity for cleaner look
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    border: '1px solid rgba(255, 255, 255, 0.5)',
-    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)'
+    background: 'var(--glass-surface)',
+    border: '1px solid var(--glass-border)',
+    boxShadow: 'var(--glass-shadow)'
 };
 
 const Login = () => {
@@ -123,22 +121,17 @@ const Login = () => {
     };
 
     return (
-        <div className="d-flex justify-content-center align-items-center min-vh-100 fade-in"
-             style={{
-                 background: 'linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%)',
-                 position: 'relative',
-                 overflow: 'hidden'
-             }}>
+        <div className="d-flex justify-content-center align-items-center min-vh-100 fade-in app-theme-page" style={{ overflow: 'hidden' }}>
 
             {/* Background Blobs */}
-            <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '600px', height: '600px', background: '#6366f1', filter: 'blur(150px)', opacity: '0.2', borderRadius: '50%', zIndex: '0' }}></div>
-            <div style={{ position: 'absolute', bottom: '10%', right: '-10%', width: '500px', height: '500px', background: '#10b981', filter: 'blur(150px)', opacity: '0.2', borderRadius: '50%', zIndex: '0' }}></div>
+            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
+            <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>
 
-            <Container style={{ zIndex: 1, maxWidth: '420px' }}> {/* Reduced maxWidth for a slimmer look */}
+            <Container className="app-page-content" style={{ maxWidth: '420px' }}> {/* Reduced maxWidth for a slimmer look */}
                 <Card className="border-0 shadow-lg" style={glassStyle}>
                     <Card.Body className="p-4"> {/* Reduced Padding (p-5 -> p-4) */}
                         <div className="text-start mb-2"> {/* Reduced Margin */}
-                            <Button variant="link" onClick={() => navigate('/')} className="p-0 text-decoration-none text-muted fw-bold small">
+                            <Button variant="link" onClick={() => navigate('/')} className="p-0 text-decoration-none text-secondary fw-bold small">
                                 <FaArrowLeft className="me-2" /> Back
                             </Button>
                         </div>
@@ -153,9 +146,9 @@ const Login = () => {
                         {step === 1 ? (
                             <Form onSubmit={handleLogin}>
                                 <Form.Group className="mb-3"> {/* Reduced Margin (mb-4 -> mb-3) */}
-                                    <Form.Label className="fw-semibold text-muted small text-uppercase ls-1 mb-1">Username</Form.Label>
+                                    <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-1">Username</Form.Label>
                                     <InputGroup>
-                                        <InputGroup.Text className="bg-white border-end-0"><FaUser className="text-primary opacity-50" /></InputGroup.Text>
+                                        <InputGroup.Text className="bg-white border-end-0"><FaUser className="text-primary" /></InputGroup.Text>
                                         <Form.Control
                                             type="text"
                                             placeholder="Username"
@@ -169,13 +162,13 @@ const Login = () => {
 
                                 <Form.Group className="mb-3"> {/* Reduced Margin (mb-4 -> mb-3) */}
                                     <div className="d-flex justify-content-between align-items-center mb-1">
-                                        <Form.Label className="fw-semibold text-muted small text-uppercase ls-1 mb-0">Password</Form.Label>
+                                        <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-0">Password</Form.Label>
                                         <Button variant="link" className="p-0 text-decoration-none small fw-bold" onClick={() => navigate('/forgot-password')}>
                                             Forgot?
                                         </Button>
                                     </div>
                                     <InputGroup>
-                                        <InputGroup.Text className="bg-white border-end-0"><FaLock className="text-primary opacity-50" /></InputGroup.Text>
+                                        <InputGroup.Text className="bg-white border-end-0"><FaLock className="text-primary" /></InputGroup.Text>
                                         <Form.Control
                                             type={showPassword ? "text" : "password"}
                                             placeholder="Password"
@@ -184,7 +177,7 @@ const Login = () => {
                                             required
                                             className="form-control border-start-0 border-end-0 ps-0 shadow-none"
                                         />
-                                        <Button variant="outline-secondary" className="border-start-0 bg-white text-muted" onClick={() => setShowPassword(!showPassword)}>
+                                        <Button variant="outline-secondary" className="border-start-0 bg-white text-secondary" onClick={() => setShowPassword(!showPassword)}>
                                             {showPassword ? <FaEyeSlash /> : <FaEye />}
                                         </Button>
                                     </InputGroup>
@@ -196,7 +189,7 @@ const Login = () => {
 
                                 <div className="d-flex align-items-center my-3"> {/* Reduced Margin (my-4 -> my-3) */}
                                     <hr className="flex-grow-1 opacity-25" />
-                                    <span className="px-3 text-muted small fw-bold">OR</span>
+                                    <span className="px-3 text-secondary small fw-bold">OR</span>
                                     <hr className="flex-grow-1 opacity-25" />
                                 </div>
 
@@ -210,7 +203,7 @@ const Login = () => {
                                     <FaCheckCircle className="me-2" /> Code Sent
                                 </div>
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold text-muted small text-uppercase text-center w-100 d-block mb-2">Enter OTP</Form.Label>
+                                    <Form.Label className="fw-semibold text-secondary small text-uppercase text-center w-100 d-block mb-2">Enter OTP</Form.Label>
                                     <Form.Control
                                         type="text"
                                         placeholder="000000"
@@ -224,7 +217,7 @@ const Login = () => {
                                 </Form.Group>
 
                                 <div className="d-flex justify-content-center mb-3">
-                                    <Button variant="link" onClick={handleResendOtp} disabled={!canResend || loading} className="p-0 text-decoration-none small fw-bold text-muted">
+                                    <Button variant="link" onClick={handleResendOtp} disabled={!canResend || loading} className="p-0 text-decoration-none small fw-bold text-secondary">
                                         {canResend ? <span className="text-primary"><FaRedo className="me-1" /> Resend</span> : <span>Resend in {formatTime(timer)}</span>}
                                     </Button>
                                 </div>
@@ -237,7 +230,7 @@ const Login = () => {
 
                         {step === 1 && (
                             <div className="text-center mt-3 pt-2 border-top">
-                                <span className="text-muted small">New here? </span>
+                                <span className="text-secondary small">New here? </span>
                                 <Button variant="link" onClick={() => navigate('/register')} className="p-0 fw-bold text-primary text-decoration-none small">
                                     Create Account
                                 </Button>

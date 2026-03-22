@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../api/axiosConfig';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Container, Card, Button, Modal, Form, Alert, InputGroup, Row, Col } from 'react-bootstrap';
+import { Container, Card, Button, Modal, Form, Alert, InputGroup } from 'react-bootstrap';
 import {
     FaUser,
     FaEnvelope,
@@ -15,13 +15,11 @@ import {
     FaCog
 } from 'react-icons/fa';
 
-// --- GLASSMORPHISM STYLE ---
+// --- THEME PANEL STYLE ---
 const glassStyle = {
-    background: 'rgba(255, 255, 255, 0.85)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    border: '1px solid rgba(255, 255, 255, 0.5)',
-    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)'
+    background: 'var(--glass-surface)',
+    border: '1px solid var(--glass-border)',
+    boxShadow: 'var(--glass-shadow)'
 };
 
 const Settings = () => {
@@ -64,6 +62,7 @@ const Settings = () => {
                });
 
                localStorage.removeItem('jwtToken');
+               localStorage.removeItem('lastActive');
                toast.success("Account deleted successfully. Goodbye!");
                navigate('/');
            } catch (error) {
@@ -78,18 +77,13 @@ const Settings = () => {
        };
 
     return (
-        <div className="min-vh-100 fade-in py-5"
-             style={{
-                 background: 'linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%)',
-                 position: 'relative',
-                 overflow: 'hidden'
-             }}>
+        <div className="min-vh-100 fade-in py-5 app-theme-page" style={{ overflow: 'hidden' }}>
 
             {/* Background Blobs */}
-            <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '600px', height: '600px', background: '#6366f1', filter: 'blur(150px)', opacity: '0.15', borderRadius: '50%', zIndex: '0' }}></div>
-            <div style={{ position: 'absolute', bottom: '10%', right: '-10%', width: '500px', height: '500px', background: '#10b981', filter: 'blur(150px)', opacity: '0.15', borderRadius: '50%', zIndex: '0' }}></div>
+            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
+            <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>
 
-            <Container style={{ zIndex: 1, position: 'relative', maxWidth: '800px' }}>
+            <Container className="app-page-content" style={{ position: 'relative', maxWidth: '800px' }}>
 
                 {/* HEADER */}
                 <div className="mb-4">
@@ -147,7 +141,7 @@ const Settings = () => {
                 </Card>
 
                 {/* DANGER ZONE CARD */}
-                <Card className="border-danger shadow-sm" style={{ background: 'rgba(255, 235, 238, 0.6)', backdropFilter: 'blur(10px)' }}>
+                <Card className="border-danger shadow-sm" style={{ background: 'var(--danger-surface)', border: '1px solid var(--danger-border)', boxShadow: 'var(--danger-shadow)' }}>
                     <Card.Header className="bg-danger text-white fw-bold border-0 d-flex align-items-center">
                         <FaExclamationTriangle className="me-2" /> Danger Zone
                     </Card.Header>

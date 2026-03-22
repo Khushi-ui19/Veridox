@@ -24,22 +24,24 @@ import {
     FaInfinity,
     FaArrowRight,
     FaInfoCircle,
-    FaEye
+    FaEye,
+    FaTimesCircle,
+    FaMoon,
+    FaSun
 } from 'react-icons/fa';
+import { useTheme } from '../utils/ThemeContext';
 
-// --- GLASSMORPHISM STYLE ---
+// --- THEME PANEL STYLE ---
 const glassStyle = {
-    background: 'rgba(255, 255, 255, 0.75)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    border: '1px solid rgba(255, 255, 255, 0.5)',
-    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)',
+    background: 'var(--glass-surface)',
+    border: '1px solid var(--glass-border)',
+    boxShadow: 'var(--glass-shadow)',
     transition: 'all 0.3s ease'
 };
 
 const hoverStyle = {
-    transform: 'translateY(-5px)',
-    boxShadow: '0 12px 40px 0 rgba(31, 38, 135, 0.15)'
+    transform: 'translateY(-8px)',
+    boxShadow: '0 24px 42px rgba(0, 0, 0, 0.5)'
 };
 
 const Dashboard = () => {
@@ -58,6 +60,7 @@ const Dashboard = () => {
     // File Upload State
     const [selectedFile, setSelectedFile] = useState(null);
     const [fileStats, setFileStats] = useState(null);
+    const [analysisProgress, setAnalysisProgress] = useState(0);
     const fileInputRef = useRef(null);
 
     // Modal State
@@ -70,6 +73,7 @@ const Dashboard = () => {
 
     const navigate = useNavigate();
     const isAdmin = user.role === 'ADMIN';
+    const { theme, toggleTheme } = useTheme();
 
     // --- INITIAL DATA FETCHING ---
     useEffect(() => {
@@ -107,7 +111,7 @@ const Dashboard = () => {
         try {
             const response = await api.get('/auth/profile');
             setUser(response.data);
-        } catch (error) {
+        } catch {
             console.log("Could not fetch navbar profile info");
         }
     };
@@ -125,7 +129,7 @@ const Dashboard = () => {
         try {
             const response = await api.get('/contracts/rate-limit');
             setRemainingQuota(response.data);
-        } catch (error) {
+        } catch {
             console.error("Failed to fetch quota");
         }
     };
@@ -143,7 +147,7 @@ const Dashboard = () => {
             await deleteContract(contractToDelete);
             toast.success("Contract deleted successfully!");
             fetchContracts();
-        } catch (error) {
+        } catch {
             toast.error("Failed to delete contract");
         } finally {
             setShowDeleteModal(false);
@@ -151,32 +155,45 @@ const Dashboard = () => {
         }
     };
 
+    const clearSelectedFile = () => {
+        setSelectedFile(null);
+        setFileStats(null);
+        setAnalysisProgress(0);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+
     const handleFileSelect = async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setSelectedFile(file);
-            setFileStats(null);
-       // ONLY CALCULATE FOR ADMIN
-       if (isAdmin) {
-           const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        const file = e.target.files?.[0];
+        if (!file) {
+            clearSelectedFile();
+            return;
+        }
 
-           // Set temporary loading state
-           setFileStats({ size: sizeMB, pages: "Calculating..." });
+        setSelectedFile(file);
+        setFileStats(null);
 
-           try {
-               // Load PDF to count pages
-               const arrayBuffer = await file.arrayBuffer();
-               const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-               const pageCount = pdfDoc.getPageCount();
+        // ONLY CALCULATE FOR ADMIN
+        if (isAdmin) {
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
 
-               setFileStats({ size: sizeMB, pages: pageCount });
-           } catch (err) {
-               // Fallback if file is encrypted or not a valid PDF
-               setFileStats({ size: sizeMB, pages: "Unknown (Scan/Locked)" });
-           }
-       }
-   }
-           };
+            // Set temporary loading state
+            setFileStats({ size: sizeMB, pages: "Calculating..." });
+
+            try {
+                // Load PDF to count pages
+                const arrayBuffer = await file.arrayBuffer();
+                const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+                const pageCount = pdfDoc.getPageCount();
+
+                setFileStats({ size: sizeMB, pages: pageCount });
+            } catch {
+                // Fallback if file is encrypted or not a valid PDF
+                setFileStats({ size: sizeMB, pages: "Unknown (Scan/Locked)" });
+            }
+        }
+    };
 
     // --- UPDATED UPLOAD HANDLER (ASYNC POLLING) ---
     const handleUpload = async () => {
@@ -188,15 +205,22 @@ const Dashboard = () => {
         formData.append("contractType", contractType);
 
         setUploading(true);
+        setAnalysisProgress(5);
         try {
             toast.info(`Uploading ${contractType}...`);
 
             // 1. Initial Upload Request (Returns fast)
             const response = await api.post('/contracts/upload', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: { 'Content-Type': 'multipart/form-data' },
+                onUploadProgress: (event) => {
+                    if (!event.total) return;
+                    const uploadPercent = Math.round((event.loaded / event.total) * 20);
+                    setAnalysisProgress((prev) => Math.max(prev, Math.min(20, uploadPercent)));
+                }
             });
 
             const contractId = response.data.id;
+            setAnalysisProgress((prev) => Math.max(prev, 25));
             toast.info("AI Analysis running in background...");
 
             // 2. Refresh list immediately to show the "Processing" card
@@ -212,15 +236,21 @@ const Dashboard = () => {
                 // Check Status
                 const statusRes = await api.get(`/contracts/${contractId}/status`);
                 const status = statusRes.data.status;
+                const progress = statusRes.data.progress;
+
+                if (typeof progress === 'number') {
+                    const clampedProgress = Math.max(20, Math.min(99, progress));
+                    setAnalysisProgress((prev) => Math.max(prev, clampedProgress));
+                }
 
                 if (status === 'COMPLETED') {
                     isAnalysisComplete = true;
+                    setAnalysisProgress(100);
                     toast.success("Analysis Complete!");
                     fetchContracts(); // Final refresh to show results
 
                     // Reset inputs
-                    setSelectedFile(null);
-                    if (fileInputRef.current) fileInputRef.current.value = "";
+                    clearSelectedFile();
 
                 } else if (status === 'FAILED') {
                     isAnalysisComplete = true;
@@ -235,11 +265,16 @@ const Dashboard = () => {
             toast.error(msg);
         } finally {
             setUploading(false);
+            setAnalysisProgress(0);
         }
     };
 
     const handleLogout = async () => {
-        try { await api.post('/auth/logout'); } catch (e) { }
+        try {
+            await api.post('/auth/logout');
+        } catch (errorMessage) {
+            console.warn("Logout API failed:", errorMessage);
+        }
         localStorage.removeItem('lastActive');
         navigate('/');
         toast.success("Logout Successful!")
@@ -259,17 +294,13 @@ const Dashboard = () => {
     );
 
     return (
-        <div className="min-vh-100 fade-in pb-5"
-             style={{
-                 background: 'linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%)',
-                 position: 'relative',
-                 overflowX: 'hidden'
-             }}>
+        <div className="min-vh-100 fade-in pb-5 app-theme-page" style={{ overflowX: 'hidden' }}>
 
             {/* Background Blobs */}
-            <div className="background-blob" style={{ position: 'absolute', top: '-10%', left: '-10%', width: '600px', height: '600px', background: '#6366f1', filter: 'blur(150px)', opacity: '0.15', borderRadius: '50%', zIndex: '0' }}></div>
+            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
+            <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>
 
-            <Container style={{ position: 'relative', zIndex: 1 }} className="pt-3 pt-md-4">
+            <Container style={{ position: 'relative' }} className="app-page-content pt-3 pt-md-4">
 
                 {/* --- 1. NAVBAR --- */}
                 <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-5 gap-3">
@@ -287,6 +318,15 @@ const Dashboard = () => {
                     </div>
 
                     <div className="d-flex gap-2 w-100 w-md-auto justify-content-center justify-content-md-end">
+                        <Button
+                            variant="white"
+                            className="shadow-sm rounded-pill fw-bold d-flex align-items-center justify-content-center flex-grow-0 px-3"
+                            onClick={toggleTheme}
+                            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                        >
+                            {theme === 'dark' ? <FaSun /> : <FaMoon />}
+                        </Button>
                         <Button variant="white" className="shadow-sm rounded-pill fw-bold text-primary border flex-grow-1 flex-md-grow-0" onClick={() => navigate('/chat/general')}>
                             <FaComments className="me-2" /> AI Chat
                         </Button>
@@ -331,7 +371,7 @@ const Dashboard = () => {
                 <Row className="g-4 mb-5">
                     {!isAdmin && (
                         <Col md={12} lg={6}>
-                            <Card className="border-0 h-100" style={{ ...glassStyle, background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)', color: 'white' }}>
+                            <Card className="border-0 h-100" style={{ ...glassStyle, background: 'var(--gradient-accent)', color: 'var(--text-primary)' }}>
                                 <Card.Body className="p-4 d-flex flex-column justify-content-center">
                                     <div className="d-flex justify-content-between align-items-start">
                                         <div>
@@ -400,14 +440,28 @@ const Dashboard = () => {
                                     </div>
 
                                     <div className="d-flex flex-column flex-md-row gap-2">
-                                        <Form.Control
-                                            type="file"
-                                            ref={fileInputRef}
-                                            onChange={handleFileSelect}
-                                            accept="application/pdf"
-                                            disabled={uploading || (!isAdmin && remainingQuota?.remaining === 0)}
-                                            className="shadow-sm border-0 py-2 flex-grow-1"
-                                        />
+                                        <div className="position-relative flex-grow-1">
+                                            <Form.Control
+                                                type="file"
+                                                ref={fileInputRef}
+                                                onChange={handleFileSelect}
+                                                accept="application/pdf"
+                                                disabled={uploading || (!isAdmin && remainingQuota?.remaining === 0)}
+                                                className="shadow-sm border-0 py-2 pe-5"
+                                            />
+                                            {selectedFile && !uploading && (
+                                                <Button
+                                                    variant="link"
+                                                    onClick={clearSelectedFile}
+                                                    className="position-absolute top-50 end-0 translate-middle-y me-2 p-0 text-danger d-flex align-items-center justify-content-center"
+                                                    style={{ width: '28px', height: '28px', zIndex: 5 }}
+                                                    title="Unselect PDF"
+                                                    aria-label="Unselect selected PDF"
+                                                >
+                                                    <FaTimesCircle size={18} />
+                                                </Button>
+                                            )}
+                                        </div>
 
                                         <Button
                                             variant="primary"
@@ -416,7 +470,7 @@ const Dashboard = () => {
                                             className="shadow-lg rounded-pill px-4 fw-bold"
                                             style={{ minWidth: '150px' }}
                                         >
-                                            {uploading ? <><FaRobot className="me-2 pulse" /> Analyzing</> : "Analyze"}
+                                            {uploading ? <><FaRobot className="me-2 pulse" /> {`Analyzing ${analysisProgress}%`}</> : "Analyze"}
                                         </Button>
                                     </div>
                                     {isAdmin && fileStats && (
@@ -428,7 +482,15 @@ const Dashboard = () => {
                                         </div>
                                     )}
                                 </div>
-                                {uploading && <ProgressBar animated now={100} className="mt-3" style={{ height: '4px' }} />}
+                                {uploading && (
+                                    <div className="mt-3">
+                                        <div className="d-flex justify-content-between align-items-center small text-muted mb-2">
+                                            <span>Analysis Progress</span>
+                                            <span className="fw-bold">{analysisProgress}%</span>
+                                        </div>
+                                        <ProgressBar animated={analysisProgress < 100} now={analysisProgress} />
+                                    </div>
+                                )}
                             </Card.Body>
                         </Card>
                     </Col>
@@ -464,10 +526,16 @@ const Dashboard = () => {
                                 const analysis = JSON.parse(contract.analysisJson);
                                 if (analysis.risk_level) riskLevel = analysis.risk_level.toLowerCase();
                             }
-                        } catch (e) { }
+                        } catch {
+                            // Ignore invalid or partial analysis JSON
+                        }
 
                         // --- CHECK PROCESSING STATUS ---
                         const isProcessing = contract.status === 'PROCESSING';
+                        const processingProgress = Math.max(
+                            0,
+                            Math.min(99, typeof contract.analysisProgress === 'number' ? contract.analysisProgress : 0)
+                        );
                         const riskBadge = getRiskBadge(riskLevel);
 
                         return (
@@ -491,7 +559,7 @@ const Dashboard = () => {
                                             {isProcessing ? (
                                                 <Badge bg="secondary" className="py-2 px-3 rounded-pill fw-normal d-flex align-items-center shadow-sm">
                                                     <FaClock className="me-2 spinner-border spinner-border-sm" />
-                                                    <span>Processing...</span>
+                                                    <span>{`Processing ${processingProgress}%`}</span>
                                                 </Badge>
                                             ) : (
                                                 <Badge bg={riskBadge.variant} className="py-2 px-3 rounded-pill fw-normal d-flex align-items-center shadow-sm">

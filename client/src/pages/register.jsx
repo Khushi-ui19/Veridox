@@ -16,13 +16,11 @@ import {
     FaRedo // Icon for Resend
 } from 'react-icons/fa';
 
-// --- GLASSMORPHISM STYLE ---
+// --- THEME PANEL STYLE ---
 const glassStyle = {
-    background: 'rgba(255, 255, 255, 0.85)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    border: '1px solid rgba(255, 255, 255, 0.5)',
-    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)'
+    background: 'var(--glass-surface)',
+    border: '1px solid var(--glass-border)',
+    boxShadow: 'var(--glass-shadow)'
 };
 
 const Register = () => {
@@ -115,24 +113,19 @@ const Register = () => {
     };
 
     return (
-        <div className="d-flex justify-content-center align-items-center min-vh-100 fade-in"
-             style={{
-                 background: 'linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%)',
-                 position: 'relative',
-                 overflow: 'hidden'
-             }}>
+        <div className="d-flex justify-content-center align-items-center min-vh-100 fade-in app-theme-page" style={{ overflow: 'hidden' }}>
 
             {/* Background Blobs */}
-            <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '600px', height: '600px', background: '#6366f1', filter: 'blur(150px)', opacity: '0.2', borderRadius: '50%', zIndex: '0' }}></div>
-            <div style={{ position: 'absolute', bottom: '10%', right: '-10%', width: '500px', height: '500px', background: '#10b981', filter: 'blur(150px)', opacity: '0.2', borderRadius: '50%', zIndex: '0' }}></div>
+            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
+            <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>
 
-            <Container style={{ zIndex: 1, maxWidth: '450px' }}>
+            <Container className="app-page-content" style={{ maxWidth: '450px' }}>
                 <Card className="border-0 shadow-lg" style={glassStyle}>
                     <Card.Body className="p-4">
 
                         {/* Header: Back Button Logic */}
                         <div className="text-start mb-2">
-                            <Button variant="link" onClick={() => step === 2 ? setStep(1) : navigate('/')} className="p-0 text-decoration-none text-muted fw-bold small">
+                            <Button variant="link" onClick={() => step === 2 ? setStep(1) : navigate('/')} className="p-0 text-decoration-none text-secondary fw-bold small">
                                 <FaArrowLeft className="me-2" /> {step === 2 ? "Change Email" : "Back"}
                             </Button>
                         </div>
@@ -143,16 +136,16 @@ const Register = () => {
                                 {step === 1 ? <FaUserPlus size={28} /> : <FaCheckCircle size={28} />}
                             </div>
                             <h4 className="fw-bold text-dark mb-0">{step === 1 ? "Create Account" : "Verify Email"}</h4>
-                            {step === 2 && <small className="text-muted">Enter the code sent to <strong>{email}</strong></small>}
+                            {step === 2 && <small className="text-secondary">Enter the code sent to <strong>{email}</strong></small>}
                         </div>
 
                         {/* STEP 1: REGISTRATION FORM */}
                         {step === 1 && (
                             <Form onSubmit={handleRegister}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold text-muted small text-uppercase ls-1 mb-1">Username</Form.Label>
+                                    <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-1">Username</Form.Label>
                                     <InputGroup>
-                                        <InputGroup.Text className="bg-white border-end-0"><FaUser className="text-primary opacity-50" /></InputGroup.Text>
+                                        <InputGroup.Text className="bg-white border-end-0"><FaUser className="text-primary" /></InputGroup.Text>
                                         <Form.Control
                                             type="text"
                                             placeholder="Choose a username"
@@ -165,9 +158,9 @@ const Register = () => {
                                 </Form.Group>
 
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold text-muted small text-uppercase ls-1 mb-1">Email Address</Form.Label>
+                                    <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-1">Email Address</Form.Label>
                                     <InputGroup>
-                                        <InputGroup.Text className="bg-white border-end-0"><FaEnvelope className="text-primary opacity-50" /></InputGroup.Text>
+                                        <InputGroup.Text className="bg-white border-end-0"><FaEnvelope className="text-primary" /></InputGroup.Text>
                                         <Form.Control
                                             type="email"
                                             placeholder="name@example.com"
@@ -180,9 +173,9 @@ const Register = () => {
                                 </Form.Group>
 
                                 <Form.Group className="mb-4">
-                                    <Form.Label className="fw-semibold text-muted small text-uppercase ls-1 mb-1">Password</Form.Label>
+                                    <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-1">Password</Form.Label>
                                     <InputGroup>
-                                        <InputGroup.Text className="bg-white border-end-0"><FaLock className="text-primary opacity-50" /></InputGroup.Text>
+                                        <InputGroup.Text className="bg-white border-end-0"><FaLock className="text-primary" /></InputGroup.Text>
                                         <Form.Control
                                             type={showPassword ? "text" : "password"}
                                             placeholder="Create a strong password"
@@ -191,7 +184,7 @@ const Register = () => {
                                             required
                                             className="form-control border-start-0 border-end-0 ps-0 shadow-none"
                                         />
-                                        <Button variant="outline-secondary" className="border-start-0 bg-white text-muted" onClick={() => setShowPassword(!showPassword)}>
+                                        <Button variant="outline-secondary" className="border-start-0 bg-white text-secondary" onClick={() => setShowPassword(!showPassword)}>
                                             {showPassword ? <FaEyeSlash /> : <FaEye />}
                                         </Button>
                                     </InputGroup>
@@ -203,7 +196,7 @@ const Register = () => {
 
                                 <div className="d-flex align-items-center my-3">
                                     <hr className="flex-grow-1 opacity-25" />
-                                    <span className="px-3 text-muted small fw-bold">OR</span>
+                                    <span className="px-3 text-secondary small fw-bold">OR</span>
                                     <hr className="flex-grow-1 opacity-25" />
                                 </div>
 
@@ -217,7 +210,7 @@ const Register = () => {
                         {step === 2 && (
                             <Form onSubmit={handleVerify}>
                                 <Form.Group className="mb-4">
-                                    <Form.Label className="fw-semibold text-muted small text-uppercase ls-1 mb-1">Verification Code</Form.Label>
+                                    <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-1">Verification Code</Form.Label>
                                     <Form.Control
                                         type="text"
                                         placeholder="000000"
@@ -236,7 +229,7 @@ const Register = () => {
 
                                 {/* RESEND CODE BUTTON */}
                                 <div className="text-center">
-                                    <span className="text-muted small">Didn't receive code? </span>
+                                    <span className="text-secondary small">Didn't receive code? </span>
                                     <Button
                                         variant="link"
                                         onClick={handleResendOtp}
@@ -252,7 +245,7 @@ const Register = () => {
                         {/* Login Link (Only show on Step 1) */}
                         {step === 1 && (
                             <div className="text-center mt-3 pt-2 border-top">
-                                <span className="text-muted small">Already have an account? </span>
+                                <span className="text-secondary small">Already have an account? </span>
                                 <Button variant="link" onClick={() => navigate('/login')} className="p-0 fw-bold text-primary text-decoration-none small">
                                     Login Here
                                 </Button>

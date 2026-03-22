@@ -59,6 +59,7 @@ public class ContractService {
         contract.setJurisdiction(jurisdiction);
         contract.setContractType(contractType);
         contract.setStatus("PROCESSING"); // <--- Set Status
+        contract.setAnalysisProgress(0);
         contract.setFileSize(file.getSize());
 
         return contractRepository.save(contract);
@@ -71,36 +72,52 @@ public class ContractService {
         if (contract == null) return;
 
         try {
+            updateProgress(contract, 10);
+
             // --- CALCULATE PAGE COUNT ---
             try (PDDocument doc = Loader.loadPDF(fileBytes)) {
                 contract.setPageCount(doc.getNumberOfPages());
             } catch (Exception e) {
                 logger.warn("Could not count pages for contract: " + contractId);
             }
+            updateProgress(contract, 25);
+
             // Heavy Lifting (OCR + AI)
             String text = pdfService.extractTextFromBytes(fileBytes);
+            contract.setRawText(text);
+            updateProgress(contract, 60);
+
             String analysis = aiAnalysis.AnalysisContract(text, contract.getJurisdiction(), contract.getContractType());
+            contract.setAnalysisJson(analysis);
+            updateProgress(contract, 90);
 
             // Save Result
-            contract.setRawText(text);
-            contract.setAnalysisJson(analysis);
             contract.setStatus("COMPLETED");
+            contract.setAnalysisProgress(100);
             contractRepository.save(contract);
 
         } catch (Exception e) {
-            e.printStackTrace(); // Log error
+            logger.error("Analysis failed for contract: " + contractId, e);
             contract.setStatus("FAILED");
+            if (contract.getAnalysisProgress() == null) {
+                contract.setAnalysisProgress(0);
+            }
             contractRepository.save(contract);
         }
     }
-    public String chatWithAi(String question , String contractId , String conversationId){
+
+    private void updateProgress(Contract contract, int progress) {
+        contract.setAnalysisProgress(Math.max(0, Math.min(100, progress)));
+        contractRepository.save(contract);
+    }
+    public String chatWithAi(String question , String contractId , String conversationId, String username){
         String contractText = null;
         if (contractId != null && !contractId.isEmpty() && !contractId.equalsIgnoreCase("general")) {
             Contract contract = contractRepository.findById(contractId)
                     .orElseThrow(() -> new RuntimeException("Contract not found"));
             contractText = contract.getExtractedText();
         }
-            return aiAnalysis.chatWithAI(question, contractText, conversationId);
+        return aiAnalysis.chatWithAI(question, contractText, conversationId, username);
     }
     public Optional<Contract> getContractById(String id, String requestingUser) {
         Optional<Contract> contract = contractRepository.findById(id);

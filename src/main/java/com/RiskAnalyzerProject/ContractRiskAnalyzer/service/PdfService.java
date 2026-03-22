@@ -51,17 +51,7 @@ public class PdfService {
         StringBuilder out = new StringBuilder();
 
         // Initialize Tesseract
-        ITesseract tesseract = new Tesseract();
-
-        String projectPath = System.getProperty("user.dir");
-        String tessDataPath = projectPath + File.separator + "tessdata";
-        System.out.println("OCR: Looking for tessdata at -> " + tessDataPath);
-        tesseract.setDatapath(tessDataPath);
-        // OPTIONAL: Set the path to your tessdata folder if not in default system path
-        // tesseract.setDatapath("C:/Program Files/Tesseract-OCR/tessdata");
-
-
-        tesseract.setLanguage("eng"); // Set language to English
+        ITesseract tesseract = getTesseract();
 
         try {
             // Loop through all pages
@@ -76,7 +66,7 @@ public class PdfService {
                 bim = null;
             }
         } catch (TesseractException e) {
-            System.err.println("OCR Failed. Checked path: " + tessDataPath);
+            System.err.println("OCR failed while reading PDF pages.");
             throw new IOException("OCR processing failed", e);
         }
 

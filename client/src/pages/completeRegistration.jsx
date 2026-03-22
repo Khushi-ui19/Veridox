@@ -15,13 +15,11 @@ import {
     FaArrowLeft
 } from 'react-icons/fa';
 
-// --- GLASSMORPHISM STYLE ---
+// --- THEME PANEL STYLE ---
 const glassStyle = {
-    background: 'rgba(255, 255, 255, 0.85)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    border: '1px solid rgba(255, 255, 255, 0.5)',
-    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)'
+    background: 'var(--glass-surface)',
+    border: '1px solid var(--glass-border)',
+    boxShadow: 'var(--glass-shadow)'
 };
 
 const CompleteRegistration = () => {
@@ -86,22 +84,17 @@ const CompleteRegistration = () => {
     };
 
     return (
-        <div className="d-flex justify-content-center align-items-center min-vh-100 fade-in"
-             style={{
-                 background: 'linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%)',
-                 position: 'relative',
-                 overflow: 'hidden'
-             }}>
+        <div className="d-flex justify-content-center align-items-center min-vh-100 fade-in app-theme-page" style={{ overflow: 'hidden' }}>
 
-            <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '600px', height: '600px', background: '#6366f1', filter: 'blur(150px)', opacity: '0.2', borderRadius: '50%', zIndex: '0' }}></div>
-            <div style={{ position: 'absolute', bottom: '10%', right: '-10%', width: '500px', height: '500px', background: '#10b981', filter: 'blur(150px)', opacity: '0.2', borderRadius: '50%', zIndex: '0' }}></div>
+            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
+            <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>
 
-            <Container style={{ zIndex: 1, maxWidth: '450px' }}>
+            <Container className="app-page-content" style={{ maxWidth: '450px' }}>
                 <Card className="border-0 shadow-lg" style={glassStyle}>
                     <Card.Body className="p-4">
 
                         <div className="text-start mb-2">
-                            <Button variant="link" onClick={() => navigate('/login')} className="p-0 text-decoration-none text-muted fw-bold small">
+                            <Button variant="link" onClick={() => navigate('/login')} className="p-0 text-decoration-none text-secondary fw-bold small">
                                 <FaArrowLeft className="me-2" /> Back to Login
                             </Button>
                         </div>
@@ -111,28 +104,28 @@ const CompleteRegistration = () => {
                                 <FaUserCheck size={28} />
                             </div>
                             <h4 className="fw-bold text-dark mb-1">Final Step</h4>
-                            <p className="text-muted small">Complete your Google registration</p>
+                            <p className="text-secondary small">Complete your Google registration</p>
                         </div>
 
                         <Form onSubmit={handleSubmit}>
                             <Form.Group className="mb-3">
-                                <Form.Label className="fw-semibold text-muted small text-uppercase ls-1 mb-1">Email</Form.Label>
+                                <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-1">Email</Form.Label>
                                 <InputGroup>
-                                    <InputGroup.Text className="bg-light border-end-0"><FaEnvelope className="text-muted" /></InputGroup.Text>
+                                    <InputGroup.Text className="bg-light border-end-0"><FaEnvelope className="text-secondary" /></InputGroup.Text>
                                     <Form.Control
                                         type="email"
                                         value={email}
                                         disabled
-                                        className="form-control bg-light border-start-0 ps-0 shadow-none text-muted"
+                                        className="form-control bg-light border-start-0 ps-0 shadow-none text-secondary"
                                     />
                                     <InputGroup.Text className="bg-light border-start-0 text-success"><FaCheckCircle /></InputGroup.Text>
                                 </InputGroup>
                             </Form.Group>
 
                             <Form.Group className="mb-3">
-                                <Form.Label className="fw-semibold text-muted small text-uppercase ls-1 mb-1">Username</Form.Label>
+                                <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-1">Username</Form.Label>
                                 <InputGroup>
-                                    <InputGroup.Text className="bg-white border-end-0"><FaUser className="text-primary opacity-50" /></InputGroup.Text>
+                                    <InputGroup.Text className="bg-white border-end-0"><FaUser className="text-primary" /></InputGroup.Text>
                                     <Form.Control
                                         type="text"
                                         placeholder="Choose a username"
@@ -146,13 +139,13 @@ const CompleteRegistration = () => {
 
                             <Form.Group className="mb-4">
                                 <div className="d-flex justify-content-between align-items-center mb-1">
-                                    <Form.Label className="fw-semibold text-muted small text-uppercase ls-1 mb-0">Set Password</Form.Label>
+                                    <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-0">Set Password</Form.Label>
                                     <Button variant="link" onClick={generatePassword} className="p-0 text-decoration-none small fw-bold text-primary">
                                         <FaMagic className="me-1" /> Auto-Generate
                                     </Button>
                                 </div>
                                 <InputGroup>
-                                    <InputGroup.Text className="bg-white border-end-0"><FaLock className="text-primary opacity-50" /></InputGroup.Text>
+                                    <InputGroup.Text className="bg-white border-end-0"><FaLock className="text-primary" /></InputGroup.Text>
                                     <Form.Control
                                         type={showPassword ? "text" : "password"}
                                         placeholder="Create a password"
@@ -161,7 +154,7 @@ const CompleteRegistration = () => {
                                         required
                                         className="form-control border-start-0 border-end-0 ps-0 shadow-none"
                                     />
-                                    <Button variant="outline-secondary" className="border-start-0 bg-white text-muted" onClick={() => setShowPassword(!showPassword)}>
+                                    <Button variant="outline-secondary" className="border-start-0 bg-white text-secondary" onClick={() => setShowPassword(!showPassword)}>
                                         {showPassword ? <FaEyeSlash /> : <FaEye />}
                                     </Button>
                                 </InputGroup>
