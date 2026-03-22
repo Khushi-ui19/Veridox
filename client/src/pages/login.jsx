@@ -89,7 +89,8 @@ const Login = () => {
 
    const handleGoogleLogin = () => {
         document.cookie = "auth_intent=login; path=/; max-age=300";
-       window.location.href = "/oauth2/authorization/google";
+       const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+       window.location.href = `${baseUrl}/oauth2/authorization/google`;
     };
 
     const handleResendOtp = async () => {

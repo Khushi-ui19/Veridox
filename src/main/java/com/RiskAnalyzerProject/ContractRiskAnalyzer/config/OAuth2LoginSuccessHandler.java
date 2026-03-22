@@ -8,6 +8,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -32,8 +33,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     // Use a relative path so it works on both localhost:8080 and localhost:5173
     // Or hardcode to 8080 if you are strictly testing Docker.
     // Ideally, use a property, but for now, let's point to the root (relative).
-    private final String FRONTEND_URL = ""; // Empty string means "relative to current domain"
-
+    @Value("${app.frontend.url:http://localhost:5173}")
+    private String FRONTEND_URL;
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
@@ -61,10 +62,10 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 String jwt = jwtUtil.generateToken(existingUser.get().getUsername());
                 ResponseCookie jwtCookie = ResponseCookie.from("jwtToken", jwt)
                         .httpOnly(true)
-                        .secure(false) // <--- Set to false for local testing (change to true for Koyeb)
+                        .secure(true) // <--- Set to false for local testing (change to true for Koyeb)
                         .path("/")
                         .maxAge(24 * 60 * 60)
-                        .sameSite("Lax")
+                        .sameSite("None")
                         .build();
                 response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
                 // Redirect to /login on the SAME domain

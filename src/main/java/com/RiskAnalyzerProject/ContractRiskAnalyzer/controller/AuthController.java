@@ -20,7 +20,7 @@ import jakarta.servlet.http.Cookie;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:5173", "https://www.google.com/search?q=https://your-project-name.vercel.app"}, allowCredentials = "true")
 public class AuthController {
 
     @Autowired
@@ -73,7 +73,7 @@ public class AuthController {
                 .secure(true) // Set to true for HTTPS (Koyeb/Prod)
                 .path("/")    // Available to all endpoints
                 .maxAge(24 * 60 * 60) // Expires in 1 day
-                .sameSite("Lax") // Good for security
+                .sameSite("None") // Good for security
                 .build();
             Map<String, String> response = new HashMap<>();
             response.put("message", "Login Successful");
