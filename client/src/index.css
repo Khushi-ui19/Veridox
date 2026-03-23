@@ -1094,6 +1094,32 @@ body.is-scrolling .navbar {
   }
 }
 
+@media (hover: none) and (pointer: coarse) {
+  html,
+  body {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  #root {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .app-theme-page {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+    scrollbar-width: none;
+  }
+
+  .app-theme-page::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
