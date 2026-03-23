@@ -111,21 +111,19 @@
 html,
 body,
 #root {
+  height: 100%;
   min-height: 100%;
 }
 
 html,
 body {
-  height: auto;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 body {
   margin: 0;
   min-width: 320px;
-  scrollbar-width: thin;
-  scrollbar-color: #007bff transparent;
+  min-height: 100%;
   color: var(--text-primary);
   background-color: var(--bg-base);
   background-image:
@@ -191,9 +189,10 @@ a:hover {
 .app-theme-page {
   position: relative;
   isolation: isolate;
+  height: 100dvh;
   min-height: 100dvh;
-  height: auto;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #007bff transparent;
   background-image:
@@ -976,24 +975,20 @@ body.is-scrolling .navbar {
   }
 }
 
-body::-webkit-scrollbar,
 .app-theme-page::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-body::-webkit-scrollbar-track,
 .app-theme-page::-webkit-scrollbar-track {
   background: transparent;
 }
 
-body::-webkit-scrollbar-thumb,
 .app-theme-page::-webkit-scrollbar-thumb {
   background: #007bff;
   border-radius: 10px;
 }
 
-body::-webkit-scrollbar-thumb:hover,
 .app-theme-page::-webkit-scrollbar-thumb:hover {
   background: #0069d9;
 }
