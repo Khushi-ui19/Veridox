@@ -1024,7 +1024,11 @@ body.is-scrolling .navbar {
 }
 
 @media (max-width: 768px) {
-  html,
+  html {
+    overflow-x: hidden;
+    overflow-y: hidden;
+  }
+
   body {
     overflow-x: hidden;
     overflow-y: auto;
@@ -1039,6 +1043,13 @@ body.is-scrolling .navbar {
     height: auto;
     min-height: 100dvh;
     overflow: visible;
+    scrollbar-width: none;
+  }
+
+  .app-theme-page::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
   }
 
   .home-hero-offset {
@@ -1095,7 +1106,11 @@ body.is-scrolling .navbar {
 }
 
 @media (hover: none) and (pointer: coarse) {
-  html,
+  html {
+    overflow-x: hidden;
+    overflow-y: hidden;
+  }
+
   body {
     overflow-x: hidden;
     overflow-y: auto;
