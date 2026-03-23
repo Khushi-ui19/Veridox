@@ -30,6 +30,7 @@ import {
     FaSun
 } from 'react-icons/fa';
 import { useTheme } from '../utils/ThemeContext';
+import { cacheUser, clearCachedUser, getCachedUser } from '../utils/authUserCache';
 
 // --- THEME PANEL STYLE ---
 const glassStyle = {
@@ -44,6 +45,9 @@ const hoverStyle = {
     boxShadow: '0 24px 42px rgba(0, 0, 0, 0.5)'
 };
 
+const MAX_UPLOAD_SIZE_BYTES = 20 * 1024 * 1024;
+const MAX_UPLOAD_PAGES = 15;
+
 const Dashboard = () => {
     // --- STATE MANAGEMENT ---
     const [contracts, setContracts] = useState([]);
@@ -51,7 +55,7 @@ const Dashboard = () => {
     const [searchTerm, setSearchTerm] = useState('');
 
     // User Profile State
-    const [user, setUser] = useState({ username: 'User', email: '', role: 'USER' });
+    const [user, setUser] = useState(() => getCachedUser() || { username: '', email: '', role: 'USER' });
 
     // Rate Limiting State
     const [remainingQuota, setRemainingQuota] = useState(null);
@@ -73,6 +77,7 @@ const Dashboard = () => {
 
     const navigate = useNavigate();
     const isAdmin = user.role === 'ADMIN';
+    const displayUsername = user.username || 'Loading...';
     const { theme, toggleTheme } = useTheme();
 
     // --- INITIAL DATA FETCHING ---
@@ -111,6 +116,7 @@ const Dashboard = () => {
         try {
             const response = await api.get('/auth/profile');
             setUser(response.data);
+            cacheUser(response.data);
         } catch {
             console.log("Could not fetch navbar profile info");
         }
@@ -171,27 +177,37 @@ const Dashboard = () => {
             return;
         }
 
+        if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+            toast.error("File size exceeds 20MB limit. Please upload a smaller PDF.");
+            clearSelectedFile();
+            return;
+        }
+
         setSelectedFile(file);
         setFileStats(null);
 
-        // ONLY CALCULATE FOR ADMIN
-        if (isAdmin) {
-            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
 
-            // Set temporary loading state
-            setFileStats({ size: sizeMB, pages: "Calculating..." });
+        // Set temporary loading state
+        setFileStats({ size: sizeMB, pages: "Calculating..." });
 
-            try {
-                // Load PDF to count pages
-                const arrayBuffer = await file.arrayBuffer();
-                const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-                const pageCount = pdfDoc.getPageCount();
+        try {
+            // Load PDF to count pages
+            const arrayBuffer = await file.arrayBuffer();
+            const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+            const pageCount = pdfDoc.getPageCount();
 
-                setFileStats({ size: sizeMB, pages: pageCount });
-            } catch {
-                // Fallback if file is encrypted or not a valid PDF
-                setFileStats({ size: sizeMB, pages: "Unknown (Scan/Locked)" });
+            if (pageCount > MAX_UPLOAD_PAGES) {
+                toast.error("PDF exceeds 15-page limit. Please upload a PDF with up to 15 pages.");
+                clearSelectedFile();
+                return;
             }
+
+            setFileStats({ size: sizeMB, pages: pageCount });
+        } catch {
+            toast.error("Unable to read PDF. Please upload a valid PDF file.");
+            clearSelectedFile();
+            return;
         }
     };
 
@@ -261,8 +277,13 @@ const Dashboard = () => {
             }
 
         } catch (error) {
+            if (error?.response?.status === 404) {
+                toast.error("Analysis failed. Contract removed automatically.");
+                fetchContracts();
+            } else {
             const msg = error.response?.data?.message || "Upload failed!";
             toast.error(msg);
+            }
         } finally {
             setUploading(false);
             setAnalysisProgress(0);
@@ -276,6 +297,7 @@ const Dashboard = () => {
             console.warn("Logout API failed:", errorMessage);
         }
         localStorage.removeItem('lastActive');
+        clearCachedUser();
         navigate('/');
         toast.success("Logout Successful!")
     };
@@ -289,9 +311,25 @@ const Dashboard = () => {
         return riskLevels[riskLevel] || riskLevels.low;
     };
 
-    const filteredContracts = contracts.filter(c =>
-        c.filename.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const normalizeStatus = (status = '') => status.toString().trim().toUpperCase();
+
+    const getSafeFilename = (contract) => {
+        const filename = contract?.filename;
+        return typeof filename === 'string' && filename.trim() ? filename : 'Untitled contract';
+    };
+
+    const getFormattedUploadDate = (uploadDate) => {
+        if (!uploadDate) return 'Unknown upload date';
+        const date = new Date(uploadDate);
+        return Number.isNaN(date.getTime()) ? 'Unknown upload date' : date.toLocaleDateString();
+    };
+
+    const filteredContracts = contracts
+        .filter((contract) => contract && typeof contract === 'object')
+        .filter((contract) => normalizeStatus(contract?.status) !== 'FAILED')
+        .filter((contract) =>
+            getSafeFilename(contract).toLowerCase().includes(searchTerm.toLowerCase())
+        );
 
     return (
         <div className="min-vh-100 fade-in pb-5 app-theme-page" style={{ overflowX: 'hidden' }}>
@@ -314,7 +352,7 @@ const Dashboard = () => {
                              {isAdmin ? <FaShieldAlt className="text-danger" size={24} /> : <FaFileContract className="text-primary" size={24} />}
                              <h3 className="fw-bold text-dark mb-0">{isAdmin ? "Admin Console" : "Contract Risk Analyzer"}</h3>
                         </div>
-                        <p className="text-muted mb-0 ms-1">Welcome back, <span className="fw-bold text-primary">{user.username}</span></p>
+                        <p className="text-muted mb-0 ms-1">Welcome back, <span className="fw-bold text-primary">{displayUsername}</span></p>
                     </div>
 
                     <div className="d-flex flex-wrap gap-2 w-100 w-md-auto-custom justify-content-center justify-content-md-end">
@@ -334,11 +372,11 @@ const Dashboard = () => {
                         <Dropdown align="end">
                             <Dropdown.Toggle variant="white" id="profile-dropdown" className="d-flex align-items-center border shadow-sm rounded-pill px-3 py-2 text-dark bg-white">
                                 <FaUserCircle size={20} className="me-2 text-secondary" />
-                                <span className="d-none d-sm-inline">{user.username}</span> {isAdmin && <Badge bg="danger" className="ms-2">ADMIN</Badge>}
+                                <span className="d-none d-sm-inline">{displayUsername}</span> {isAdmin && <Badge bg="danger" className="ms-2">ADMIN</Badge>}
                             </Dropdown.Toggle>
                             <Dropdown.Menu className="shadow-lg border-0 p-0 mt-2 rounded-3 overflow-hidden" style={{ minWidth: '240px' }}>
                                 <div className="px-4 py-3 bg-light border-bottom">
-                                    <div className="fw-bold text-dark">{user.username}</div>
+                                    <div className="fw-bold text-dark">{displayUsername}</div>
                                     <div className="small text-muted text-truncate">{user.email}</div>
                                 </div>
                                 <div className="p-2">
@@ -403,7 +441,7 @@ const Dashboard = () => {
                             <Alert variant="info" className="py-2 px-3 small border-0 bg-opacity-10 shadow-sm d-flex align-items-center mb-3">
                                 <FaInfoCircle className="me-2 flex-shrink-0" size={16} />
                                 <span>
-                                    <strong>Limits:</strong> Max File Size: <strong>20MB</strong> | Max Length: <strong>~10 Pages</strong>
+                                    <strong>Limits:</strong> Max File Size: <strong>20MB</strong> | Max Length: <strong>15 Pages</strong>
                                 </span>
                             </Alert>
                             {/* ------------------------------------- */}
@@ -530,12 +568,15 @@ const Dashboard = () => {
                             // Ignore invalid or partial analysis JSON
                         }
 
-                        // --- CHECK PROCESSING STATUS ---
-                        const isProcessing = contract.status === 'PROCESSING';
+                        const displayFilename = getSafeFilename(contract);
+                        const normalizedStatus = normalizeStatus(contract?.status);
+                        const isProcessing = normalizedStatus === 'PROCESSING';
+                        const isFailed = normalizedStatus === 'FAILED';
                         const processingProgress = Math.max(
                             0,
                             Math.min(99, typeof contract.analysisProgress === 'number' ? contract.analysisProgress : 0)
                         );
+                        const formattedUploadDate = getFormattedUploadDate(contract?.uploadDate);
                         const riskBadge = getRiskBadge(riskLevel);
 
                         return (
@@ -561,6 +602,10 @@ const Dashboard = () => {
                                                     <FaClock className="me-2 spinner-border spinner-border-sm" />
                                                     <span>{`Processing ${processingProgress}%`}</span>
                                                 </Badge>
+                                            ) : isFailed ? (
+                                                <Badge bg="danger" className="py-2 px-3 rounded-pill fw-normal d-flex align-items-center shadow-sm">
+                                                    <FaTimesCircle /> <span className="ms-1">Analysis Failed</span>
+                                                </Badge>
                                             ) : (
                                                 <Badge bg={riskBadge.variant} className="py-2 px-3 rounded-pill fw-normal d-flex align-items-center shadow-sm">
                                                     {riskBadge.icon} <span className="ms-1">{riskBadge.text}</span>
@@ -569,8 +614,8 @@ const Dashboard = () => {
                                             {/* ------------------------- */}
                                         </div>
 
-                                        <Card.Title className="text-truncate fw-bold text-dark mb-1" title={contract.filename}>
-                                            {contract.filename}
+                                        <Card.Title className="text-truncate fw-bold text-dark mb-1" title={displayFilename}>
+                                            {displayFilename}
                                         </Card.Title>
 
                                         {isAdmin && (
@@ -595,8 +640,14 @@ const Dashboard = () => {
                     )}
                 <Card.Text className="text-muted small mb-4">
                     <FaClock className="me-1" />
-                    {new Date(contract.uploadDate).toLocaleDateString()}
+                    {formattedUploadDate}
                 </Card.Text>
+
+                {isFailed && (
+                    <Alert variant="danger" className="py-2 px-3 small mb-3">
+                        Analysis failed. Please retry upload or delete this file.
+                    </Alert>
+                )}
 
                 <div className="mt-auto d-grid gap-2">
                     <Button

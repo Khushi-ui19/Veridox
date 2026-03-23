@@ -2,6 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../api/axiosConfig';
+import { clearCachedUser } from '../utils/authUserCache';
 
 const createThrottle = (fn, waitMs) => {
     let lastRun = 0;
@@ -62,6 +63,7 @@ const AutoLogout = () => {
         }
         // 1. Clear Data
         localStorage.removeItem('lastActive');
+        clearCachedUser();
 
         // 2. Alert User
         toast.info("Session timed out due to inactivity.");

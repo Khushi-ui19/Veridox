@@ -1,6 +1,7 @@
 package com.RiskAnalyzerProject.ContractRiskAnalyzer.controller;
 
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.dto.ChatRequest;
+import com.RiskAnalyzerProject.ContractRiskAnalyzer.exception.ContractNotFoundException;
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.model.Contract;
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.service.ContractService;
 import java.io.IOException;
@@ -42,7 +43,7 @@ public class AnalyzerController {
     @GetMapping("/{id}/download-report")
     public ResponseEntity<byte[]> downloadReport(@PathVariable String id, Principal principal) throws IOException {
         Contract contract = contractService.getContractById(id, principal.getName())
-                .orElseThrow(() -> new RuntimeException("Contract not found or access denied"));
+                .orElseThrow(() -> new ContractNotFoundException("Contract not found or access denied"));
         // 1. Generate PDF
         byte[] pdfBytes = pdfReportService.generateContractReport(contract);
         return ResponseEntity.ok()
@@ -66,7 +67,7 @@ public class AnalyzerController {
     @GetMapping("/{id}/status")
     public ResponseEntity<Map<String, Object>> getContractStatus(@PathVariable String id, Principal principal) {
         Contract contract = contractService.getContractById(id, principal.getName())
-                .orElseThrow(() -> new RuntimeException("Contract not found"));
+                .orElseThrow(() -> new ContractNotFoundException("Contract not found or access denied"));
 
         int progress = contract.getAnalysisProgress() != null ? contract.getAnalysisProgress() : 0;
         return ResponseEntity.ok(Map.of(
@@ -82,18 +83,8 @@ public class AnalyzerController {
             Principal principal,
             @RequestParam(value = "jurisdiction", defaultValue = "General") String jurisdiction,
             @RequestParam(value = "contractType", defaultValue = "General Contract") String contractType) throws IOException {
-
-        // 1. Extract bytes IMMEDIATELY before the HTTP request closes
-        byte[] fileBytes = file.getBytes();
-
-        // 2. Create the "PROCESSING" ticket in the database (Synchronous, takes 50 milliseconds)
-        Contract savedContract = contractService.initiateContractAnalysis(file, principal.getName(), jurisdiction, contractType);
-
-        // 3. Hand off the heavy OCR/AI task to the background thread!
-        // Because the Controller is calling this from the outside, Spring will properly put it on a new thread.
-        contractService.processAsync(savedContract.getId(), fileBytes);
-
-        // 4. Return 200 OK instantly. Koyeb will no longer timeout!
+        // Validate + persist + async kickoff in one safe flow.
+        Contract savedContract = contractService.startAnalysis(file, principal.getName(), jurisdiction, contractType);
         return ResponseEntity.ok(savedContract);
     }
     @PostMapping("/chat")

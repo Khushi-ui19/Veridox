@@ -3,6 +3,7 @@ import api from '../api/axiosConfig';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Container, Card, Form, Button, Spinner, InputGroup } from 'react-bootstrap';
+import { cacheUser, clearCachedUser } from '../utils/authUserCache';
 import {
     FaShieldAlt,
     FaUser,
@@ -36,13 +37,23 @@ const Login = () => {
 
     useEffect(() => {
         localStorage.removeItem('jwtToken');
+        clearCachedUser();
         const params = new URLSearchParams(window.location.search);
         const token = params.get('token');
         const error = params.get('error');
         if (token) {
-            localStorage.setItem('lastActive', Date.now().toString());
-            toast.success("Login Successful via Google!");
-            navigate('/dashboard');
+            const finalizeOAuthLogin = async () => {
+                localStorage.setItem('lastActive', Date.now().toString());
+                try {
+                    const profileRes = await api.get('/auth/profile');
+                    cacheUser(profileRes.data);
+                } catch {
+                    // Dashboard still revalidates profile as fallback.
+                }
+                toast.success("Login Successful via Google!");
+                navigate('/dashboard');
+            };
+            finalizeOAuthLogin();
         } else if (error === 'user_exists') {
              toast.error("User already exists! Please login.");
          }
@@ -111,9 +122,12 @@ const Login = () => {
     const handleVerify = async (e) => {
         e.preventDefault();
         try {
-            await api.post(`/auth/login/verify?username=${username}&otp=${otp}`);
+            const response = await api.post(`/auth/login/verify?username=${username}&otp=${otp}`);
 
             localStorage.setItem('lastActive', Date.now().toString());
+            if (response?.data?.user) {
+                cacheUser(response.data.user);
+            }
             toast.success("Login Successful!");
             navigate('/dashboard');
         } catch (err) {

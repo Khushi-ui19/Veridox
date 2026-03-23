@@ -96,9 +96,7 @@ const Chat = () => {
     return (
         <div className="d-flex flex-column app-theme-page"
              style={{
-                 height: '100dvh',
-                 minHeight: '100svh',
-                 overflow: 'hidden'
+                 minHeight: '100dvh'
              }}>
 
             {/* Background Blobs */}
@@ -107,7 +105,7 @@ const Chat = () => {
 
             <Container
                 className="app-page-content d-flex flex-column py-3 gap-3"
-                style={{ maxWidth: '900px', height: '100%', minHeight: 0, overflow: 'hidden' }}
+                style={{ maxWidth: '900px', minHeight: 'calc(100dvh - 1.5rem)', height: 'auto' }}
             >
 
                 {/* --- HEADER (Fixed Top) --- */}

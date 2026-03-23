@@ -14,6 +14,7 @@ import {
     FaEyeSlash,
     FaCog
 } from 'react-icons/fa';
+import { cacheUser, clearCachedUser, getCachedUser } from '../utils/authUserCache';
 
 // --- THEME PANEL STYLE ---
 const glassStyle = {
@@ -24,7 +25,7 @@ const glassStyle = {
 
 const Settings = () => {
     // --- STATE MANAGEMENT ---
-    const [user, setUser] = useState({ username: '', email: '', role: '' });
+    const [user, setUser] = useState(() => getCachedUser() || { username: '', email: '', role: '' });
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -40,6 +41,7 @@ const Settings = () => {
             try {
                 const response = await api.get('/auth/profile');
                 setUser(response.data);
+                cacheUser(response.data);
             } catch (error) {
                 // Silently fail and redirect to login if session is invalid
                 navigate('/login');
@@ -63,6 +65,7 @@ const Settings = () => {
 
                localStorage.removeItem('jwtToken');
                localStorage.removeItem('lastActive');
+               clearCachedUser();
                toast.success("Account deleted successfully. Goodbye!");
                navigate('/');
            } catch (error) {

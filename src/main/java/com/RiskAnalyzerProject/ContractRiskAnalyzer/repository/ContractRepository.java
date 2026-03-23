@@ -9,6 +9,8 @@ import java.util.List;
 @Repository
 public interface ContractRepository extends MongoRepository<Contract,String> {
     List<Contract> findByOwnerUsername(String ownerUsername);
+    List<Contract> findByOwnerUsernameAndStatusIn(String ownerUsername, List<String> statuses);
+    List<Contract> findByStatusIn(List<String> statuses);
     long deleteByOwnerUsername(String ownerUsername);
 
 }

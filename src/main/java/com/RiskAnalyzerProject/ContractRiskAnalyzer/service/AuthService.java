@@ -202,14 +202,26 @@ public class AuthService {
         return "OTP sent to email";
     }
 
-    public String verifyLoginOtp(String username, String otp) {
+    public Map<String, String> verifyLoginOtp(String username, String otp) {
+        User user = userRepository.findByUsername(username.trim())
+                .orElseThrow(() -> new ResourceNotFound("User not found"));
 
-        User user = userRepository.findByUsername(username.trim()).orElseThrow(() -> new ResourceNotFound("User not found"));
-        if (user.getOtpExpiryTime().isBefore(LocalDateTime.now())) throw new AppException("OTP has expired.");
-        if (!user.getOtp().equals(otp.trim())) throw new BadCredentialsException("Invalid OTP");
+        if (user.getOtpExpiryTime().isBefore(LocalDateTime.now())) {
+            throw new AppException("OTP has expired.");
+        }
+        if (!user.getOtp().equals(otp.trim())) {
+            throw new BadCredentialsException("Invalid OTP");
+        }
+
         user.setOtp(null);
         userRepository.save(user);
-        return jwtUtil.generateToken(username.trim());
+
+        Map<String, String> result = new ConcurrentHashMap<>();
+        result.put("jwt", jwtUtil.generateToken(username.trim()));
+        result.put("username", user.getUsername());
+        result.put("email", user.getEmail());
+        result.put("role", user.getRole());
+        return result;
     }
 
     public void logOutUser(HttpServletRequest request, HttpServletResponse response) {

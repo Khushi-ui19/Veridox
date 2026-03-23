@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { clearCachedUser } from '../utils/authUserCache';
 
 const api = axios.create({
     baseURL: (import.meta.env.VITE_API_URL || 'http://localhost:8080') + '/api',
@@ -26,6 +27,7 @@ api.interceptors.response.use(
         // 2. Handle 401 Unauthorized (Token Expired/Invalid)
        if (response && response.status === 401) {
            if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+               clearCachedUser();
                sessionStorage.setItem('db_wiped_alert', 'true');
                // We no longer need to clear the token from localStorage
                // The browser will handle the expired cookie automatically
@@ -39,8 +41,8 @@ api.interceptors.response.use(
             toast.error("You do not have permission to perform this action.");
         }
 
-        // 4. Return rejection so local components can still handle specific cases if needed
-        return Promise.reject(error.message);
+        // 4. Return the original error so callers can inspect status/body
+        return Promise.reject(error);
     }
 );
 

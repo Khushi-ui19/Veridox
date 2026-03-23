@@ -13,10 +13,13 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -71,15 +74,12 @@ public class AnalyzerControllerTest {
         mockPendingContract.setStatus("PROCESSING");
         mockPendingContract.setOwnerUsername("testuser");
 
-        Mockito.when(contractService.initiateContractAnalysis(
+        Mockito.when(contractService.startAnalysis(
                 any(MockMultipartFile.class),
                 eq("testuser"),
                 eq("General"),
                 eq("NDA")
         )).thenReturn(mockPendingContract);
-
-        // Do nothing when the async method is called (since it runs on a background thread)
-        Mockito.doNothing().when(contractService).processAsync(eq("ticket-123"), any(byte[].class));
 
         // 3. EXECUTE: Simulate the React frontend sending the multipart form request
         mockMvc.perform(multipart("/api/contracts/upload")
@@ -95,9 +95,24 @@ public class AnalyzerControllerTest {
 
         // 5. VERIFY: Ensure the async background thread was successfully triggered
         Mockito.verify(contractService, Mockito.times(1))
-                .initiateContractAnalysis(any(), eq("testuser"), eq("General"), eq("NDA"));
+                .startAnalysis(any(), eq("testuser"), eq("General"), eq("NDA"));
+    }
 
-        Mockito.verify(contractService, Mockito.times(1))
-                .processAsync(eq("ticket-123"), any(byte[].class));
+    @Test
+    @WithMockUser(username = "testuser")
+    public void testDownloadReport_WhenContractMissing_ReturnsStandardizedNotFoundJson() throws Exception {
+        Mockito.when(contractService.getContractById("missing-id", "testuser"))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/contracts/missing-id/download-report")
+                        .principal(() -> "testuser"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(jsonPath("$.message").value("Contract not found or access denied"));
+
+        Mockito.verify(pdfReportService, Mockito.never()).generateContractReport(any());
     }
 }

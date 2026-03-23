@@ -67,7 +67,8 @@ public class AuthController {
     }
     @PostMapping("/login/verify")
     public ResponseEntity<?> verifyLogin(@RequestParam String username, @RequestParam String otp) {
-            String jwt = authService.verifyLoginOtp(username, otp);
+            Map<String, String> loginResult = authService.verifyLoginOtp(username, otp);
+            String jwt = loginResult.get("jwt");
             ResponseCookie jwtCookie = ResponseCookie.from("jwtToken", jwt)
                 .httpOnly(true)
                 .secure(true) // Set to true for HTTPS (Koyeb/Prod)
@@ -75,8 +76,14 @@ public class AuthController {
                 .maxAge(24 * 60 * 60) // Expires in 1 day
                 .sameSite("None") // Good for security
                 .build();
-            Map<String, String> response = new HashMap<>();
+
+            Map<String, Object> response = new HashMap<>();
             response.put("message", "Login Successful");
+            response.put("user", Map.of(
+                    "username", loginResult.get("username"),
+                    "email", loginResult.get("email"),
+                    "role", loginResult.get("role")
+            ));
             return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
                 .body(response);

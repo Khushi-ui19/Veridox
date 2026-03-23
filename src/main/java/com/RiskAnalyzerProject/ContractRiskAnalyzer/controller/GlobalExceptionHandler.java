@@ -1,6 +1,7 @@
 package com.RiskAnalyzerProject.ContractRiskAnalyzer.controller;
 
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.exception.AppException;
+import com.RiskAnalyzerProject.ContractRiskAnalyzer.exception.ContractNotFoundException;
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.exception.ResourceNotFound;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +32,11 @@ public class GlobalExceptionHandler {
     // 1. Handle Custom Resource Not Found (e.g., Contract not found)
     @ExceptionHandler(ResourceNotFound.class)
     public ResponseEntity<Map<String, Object>> handleResourceNotFound(ResourceNotFound ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
+    }
+
+    @ExceptionHandler(ContractNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleContractNotFound(ContractNotFoundException ex) {
         return buildResponse(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
     }
 

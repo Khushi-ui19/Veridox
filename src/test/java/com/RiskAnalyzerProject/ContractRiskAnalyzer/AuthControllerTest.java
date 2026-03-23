@@ -11,20 +11,18 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultHandler;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 //@SpringBootTest
@@ -62,6 +60,28 @@ public class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk()); // Expect HTTP 200 OK
+    }
+
+    @Test
+    public void testLoginVerify_ReturnsCookieAndUserPayload() throws Exception {
+        Map<String, String> verifyResult = new HashMap<>();
+        verifyResult.put("jwt", "mocked-jwt");
+        verifyResult.put("username", "animesh");
+        verifyResult.put("email", "animesh@example.com");
+        verifyResult.put("role", "USER");
+
+        when(authService.verifyLoginOtp(eq("animesh"), eq("123456"))).thenReturn(verifyResult);
+
+        mockMvc.perform(post("/api/auth/login/verify")
+                        .param("username", "animesh")
+                        .param("otp", "123456"))
+                .andExpect(status().isOk())
+                .andExpect(cookie().exists("jwtToken"))
+                .andExpect(cookie().value("jwtToken", "mocked-jwt"))
+                .andExpect(jsonPath("$.message").value("Login Successful"))
+                .andExpect(jsonPath("$.user.username").value("animesh"))
+                .andExpect(jsonPath("$.user.email").value("animesh@example.com"))
+                .andExpect(jsonPath("$.user.role").value("USER"));
     }
     @Test
     public void testResetPasswordEndpoint_Success() throws Exception {
