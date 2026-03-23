@@ -1024,6 +1024,23 @@ body.is-scrolling .navbar {
 }
 
 @media (max-width: 768px) {
+  html,
+  body {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  #root {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .app-theme-page {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
   .home-hero-offset {
     margin-top: 138px;
   }
