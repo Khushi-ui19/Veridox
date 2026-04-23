@@ -170,6 +170,7 @@
 						</goals>
 						<configuration>
 							<nodeVersion>v22.11.0</nodeVersion>
+							<workingDirectory>client</workingDirectory>
 						</configuration>
 					</execution>
 					<execution>
