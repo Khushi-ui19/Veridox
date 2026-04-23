@@ -74,9 +74,29 @@ const PrivateRoute = ({ children }) => {
         : <Navigate to="/login" replace state={{ from: location }} />;
 };
 
+function ScrollOptimizer() {
+    useEffect(() => {
+        let timer;
+        const handleScroll = () => {
+            if (!document.body.classList.contains('is-scrolling')) {
+                document.body.classList.add('is-scrolling');
+            }
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                document.body.classList.remove('is-scrolling');
+            }, 150);
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+    return null;
+}
+
 function App() {
   return (
     <Router>
+      <ScrollOptimizer />
       <ToastContainer position="top-center" autoClose={3000} />
       <AutoLogout />
       <Routes>

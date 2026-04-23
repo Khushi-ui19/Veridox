@@ -181,7 +181,7 @@ const ContractDetails = () => {
     }
 
     return (
-        <div className="min-vh-100 fade-in pb-5 app-theme-page" style={{ overflowX: 'hidden' }}>
+        <div className="min-vh-100 fade-in pb-5 app-theme-page">
 
             {/* Background Blobs */}
             <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
@@ -407,7 +407,7 @@ const ContractDetails = () => {
                                          overflowY: 'auto',
                                          fontSize: '0.88rem',
                                          whiteSpace: 'pre-wrap',
-                                         fontFamily: 'Consolas, "Courier New", monospace',
+                                         fontFamily: 'Consolas, \"Courier New\", monospace',
                                          lineHeight: '1.8'
                                      }}>
                                     {contract.rawText || "No text content available."}

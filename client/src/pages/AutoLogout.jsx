@@ -99,33 +99,21 @@ const AutoLogout = () => {
         checkInactivity();
 
         // B. Listen for user activity to reset the "lastActive" time
-        const events = ['mousemove', 'keydown', 'click'];
+        const events = ['mousemove', 'keydown', 'click', 'wheel', 'touchstart', 'touchmove'];
 
-        let scrollIdleTimer;
         const throttledUpdate = createThrottle(updateLastActive, 1000);
 
         events.forEach(event => window.addEventListener(event, throttledUpdate));
-        const onScroll = createThrottle(() => {
-            document.body.classList.add('is-scrolling');
-            if (scrollIdleTimer) clearTimeout(scrollIdleTimer);
-            scrollIdleTimer = setTimeout(() => {
-                document.body.classList.remove('is-scrolling');
-            }, 120);
-            throttledUpdate();
-        }, 120);
-        window.addEventListener('scroll', onScroll, { passive: true });
-
+        window.addEventListener('scroll', throttledUpdate, { passive: true });
         // C. Check periodically (every 1 minute) while the tab is open
         const intervalId = setInterval(checkInactivity, 60000);
 
         // Cleanup
         return () => {
             events.forEach(event => window.removeEventListener(event, throttledUpdate));
-            window.removeEventListener('scroll', onScroll);
+            window.removeEventListener('scroll', throttledUpdate);
             clearInterval(intervalId);
             throttledUpdate.cancel();
-            onScroll.cancel();
-            if (scrollIdleTimer) clearTimeout(scrollIdleTimer);
             document.body.classList.remove('is-scrolling');
         };
     }, [checkInactivity, updateLastActive]);

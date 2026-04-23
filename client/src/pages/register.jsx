@@ -101,7 +101,7 @@ const Register = () => {
     };
 
     return (
-        <div className="d-flex justify-content-center align-items-center min-vh-100 app-theme-page" style={{ overflowX: 'hidden' }}>
+        <div className="d-flex justify-content-center align-items-center min-vh-100 app-theme-page">
 
             {/* Background Blobs */}
             <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left" style={{ opacity: 0.3 }}></div>

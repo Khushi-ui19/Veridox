@@ -1,17 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
-import { Container, Navbar, Button, Card, Form, Badge, Spinner, Dropdown } from 'react-bootstrap';
+import { Container, Navbar, Button, Card, Form, Spinner, Dropdown } from 'react-bootstrap';
 import {
     FaArrowLeft,
     FaRobot,
     FaUser,
-    FaArrowUp,
     FaClock,
     FaComments,
     FaFileContract,
     FaTrashAlt,
-    FaShieldAlt,
     FaUserCircle,
     FaCog,
     FaSignOutAlt,

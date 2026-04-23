@@ -83,7 +83,7 @@ const CompleteRegistration = () => {
     };
 
     return (
-        <div className="d-flex justify-content-center align-items-center min-vh-100 fade-in app-theme-page animate-3d-appear" style={{ overflowX: 'hidden' }}>
+        <div className="d-flex justify-content-center align-items-center min-vh-100 fade-in app-theme-page animate-3d-appear">
 
             <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
             <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>

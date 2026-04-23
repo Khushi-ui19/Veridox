@@ -94,10 +94,10 @@ const Home = () => {
     }, []);
 
     return (
-        <div className="min-vh-100 fade-in d-flex flex-column app-theme-page" style={{ perspective: '1500px' }}>
+        <div className="min-vh-100 fade-in d-flex flex-column app-theme-page">
             {/* Background Decorations */}
-            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left" style={{ opacity: 0.3 }}></div>
-            <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right" style={{ opacity: 0.2 }}></div>
+            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left" style={{ opacity: 0.3, willChange: 'transform', transform: 'translateZ(0)' }}></div>
+            <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right" style={{ opacity: 0.2, willChange: 'transform', transform: 'translateZ(0)' }}></div>
 
             {/* --- 1. PREMIUM GLASS NAVBAR --- */}
             <Navbar className="fixed-top px-4 py-2 mt-4 mx-3 mx-md-5 nav-glass rounded-pill animate-entrance" style={{ zIndex: 1000, background: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.5)' }}>
@@ -115,8 +115,13 @@ const Home = () => {
                                 <Button variant="link" className="nav-link-modern d-none d-md-block" onClick={() => navigate('/login')}>
                                     Log In
                                 </Button>
-                                <Button className="nav-btn-modern" onClick={() => navigate('/register')}>
+                                <Button className="nav-btn-modern d-none d-md-block" onClick={() => navigate('/register')}>
                                     Start Free
+                                </Button>
+                                
+                                {/* Mobile Login Button shown instead of Start Free */}
+                                <Button className="nav-btn-modern d-block d-md-none px-4" onClick={() => navigate('/login')}>
+                                    Log In
                                 </Button>
                             </div>
                         ) : (
@@ -129,23 +134,23 @@ const Home = () => {
             </Navbar>
 
             {/* --- 2. 3D HERO SECTION --- */}
-            <section className="app-page-content home-hero-offset py-5 mb-5 animate-entrance">
+            <section className="app-page-content home-hero-offset py-4 py-md-5 mb-4 mb-md-5 animate-entrance">
                 <Container>
-                    <Row className="align-items-center g-5">
+                    <Row className="align-items-center g-4 g-lg-5">
                         <Col lg={7} className="text-center text-lg-start" style={{ zIndex: 10 }}>
-                            <Badge className="mb-4 px-3 py-2 rounded-pill fw-bold glass-3d-inset text-white border-0 shadow-sm" style={{ background: 'rgba(99, 102, 241, 0.85)' }}>
+                            <Badge className="mb-3 mb-md-4 px-3 py-2 rounded-pill fw-bold glass-3d-inset text-white border-0 shadow-sm" style={{ background: 'rgba(99, 102, 241, 0.85)' }}>
                                 <FaCube className="me-2 spin-slow" /> v2.0 NEURAL ENGINE
                             </Badge>
-                            <h1 className="display-1 fw-bold mb-4 text-dark" style={{ lineHeight: '1', fontSize: 'clamp(3rem, 8vw, 5rem)' }}>
+                            <h1 className="display-1 fw-bold mb-3 mb-md-4 text-dark" style={{ lineHeight: '1', fontSize: 'clamp(2.5rem, 8vw, 5rem)' }}>
                                 Master Your <br />
                                 <span className="text-dark">
                                     Obligations.
                                 </span>
                             </h1>
-                            <p className="lead text-secondary mb-5 pe-lg-5" style={{ fontSize: '1.3rem', lineHeight: '1.7', opacity: 0.8 }}>
+                            <p className="lead text-secondary mb-4 mb-md-5 pe-lg-5" style={{ fontSize: 'clamp(1rem, 4vw, 1.3rem)', lineHeight: '1.7', opacity: 0.8 }}>
                                 The world's first 3D-accelerated legal intelligence. We decompose complex contracts into actionable insights using agentic neural networks.
                             </p>
-                            <div className="d-flex flex-column flex-sm-row gap-4 justify-content-center justify-content-lg-start">
+                            <div className="d-flex flex-column flex-sm-row gap-3 gap-md-4 justify-content-center justify-content-lg-start">
                                 <Button size="lg" className="nav-btn-modern px-5 py-3" onClick={() => navigate(isLoggedIn ? '/dashboard' : '/register')}>
                                     Analyze Now <FaArrowRight className="ms-2" />
                                 </Button>

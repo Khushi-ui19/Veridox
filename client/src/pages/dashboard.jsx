@@ -301,7 +301,7 @@ const Dashboard = () => {
         );
 
     return (
-        <div className="min-vh-100 fade-in pb-5 app-theme-page" style={{ overflowX: 'hidden' }}>
+        <div className="min-vh-100 fade-in pb-5 app-theme-page">
 
             {/* Background Blobs */}
             <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
