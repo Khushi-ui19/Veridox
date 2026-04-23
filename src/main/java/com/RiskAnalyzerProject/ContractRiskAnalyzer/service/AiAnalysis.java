@@ -2,33 +2,24 @@ package com.RiskAnalyzerProject.ContractRiskAnalyzer.service;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class AiAnalysis {
 
     private final ChatClient chatClient;
-    private final ChatMemory chatMemory;
 
     @Autowired
-    public AiAnalysis(ChatModel chatModel, ChatMemory chatMemory) {
-        this.chatMemory = chatMemory;
-        this.chatClient = ChatClient.builder(chatModel).build();
+    public AiAnalysis(ChatClient.Builder chatClientBuilder) {
+        this.chatClient = chatClientBuilder.build();
     }
 
     @Cacheable(value = "contractAnalysis", key = "#contractText.hashCode()+ #jurisdiction + #contractType")
     public String AnalysisContract(String contractText, String jurisdiction, String contractType) {
-        String safeText = contractText.length() > 60000
-                ? contractText.substring(0, 60000) : contractText;
+        String safeText = contractText.length() > 3000
+                ? contractText.substring(0, 3000) : contractText;
         String prompt = """
               ROLE:
                      You are a Senior Legal Document Analyst. Your goal is accuracy first, then risk analysis.
@@ -77,6 +68,7 @@ public class AiAnalysis {
                 DOCUMENT TEXT:
                 """.formatted(jurisdiction.toUpperCase(), contractType.toUpperCase()) + safeText;
         OpenAiChatOptions options = OpenAiChatOptions.builder()
+                .model("llama-3.1-8b-instant")
                 .temperature(0.4)
                 .build();
         // Call the AI model
@@ -89,12 +81,12 @@ public class AiAnalysis {
     }
     public String chatWithAI(String question , String contractText,String conversationId, String username) {
         String safeUsername = (username == null || username.trim().isEmpty()) ? "User" : username.trim();
-        String prompt = question;
+        String systemPrompt;
         if (contractText != null && !contractText.isEmpty()) {
             String safeText = contractText.length() > 15000
                     ? contractText.substring(0, 15000)
                     : contractText;
-            prompt = """
+            systemPrompt = """
               ROLE:
                     You are a strict Legal Contract Analyst.
 
@@ -115,7 +107,7 @@ public class AiAnalysis {
                 """.formatted(safeUsername, safeText);
 
         } else {
-            prompt = """
+            systemPrompt = """
                 ROLE:
                     You are an expert AI Legal Assistant.
 
@@ -131,29 +123,17 @@ public class AiAnalysis {
                     6. If asked about a specific document, ask the user to upload it first.
                 """.formatted(safeUsername);
         }
-        // 1. Retrieve full history
-        List<Message> fullHistory = chatMemory.get(conversationId);
-        int maxHistory = 20;
-        List<Message> recentHistory;
-        if (fullHistory.size() > maxHistory) {
-            recentHistory = fullHistory.subList(fullHistory.size() - maxHistory, fullHistory.size());
-        } else {
-            recentHistory = fullHistory;
-        }
+
         OpenAiChatOptions options = OpenAiChatOptions.builder()
                 .model("llama-3.3-70b-versatile")
                 .temperature(0.5)
                 .build();
-        String response =  chatClient.prompt()
-                .system(prompt)
-                .messages(recentHistory)
+
+        return chatClient.prompt()
+                .system(systemPrompt)
                 .user(question)
                 .options(options)
                 .call()
                 .content();
-        chatMemory.add(conversationId, new UserMessage(question));
-        chatMemory.add(conversationId, new AssistantMessage(response));
-
-        return response;
     }
 }

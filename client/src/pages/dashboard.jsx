@@ -3,7 +3,7 @@ import api, { deleteContract } from '../api/axiosConfig';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { PDFDocument } from 'pdf-lib';
-import { Container, Button, Row, Col, Card, Form, ProgressBar, Badge, Modal, Dropdown, Alert, InputGroup } from 'react-bootstrap';
+import { Container, Navbar, Button, Row, Col, Card, Form, ProgressBar, Badge, Modal, Dropdown, Alert, InputGroup, Spinner } from 'react-bootstrap';
 import {
     FaCheckCircle,
     FaExclamationTriangle,
@@ -25,25 +25,9 @@ import {
     FaArrowRight,
     FaInfoCircle,
     FaEye,
-    FaTimesCircle,
-    FaMoon,
-    FaSun
+    FaTimesCircle
 } from 'react-icons/fa';
-import { useTheme } from '../utils/ThemeContext';
 import { cacheUser, clearCachedUser, getCachedUser } from '../utils/authUserCache';
-
-// --- THEME PANEL STYLE ---
-const glassStyle = {
-    background: 'var(--glass-surface)',
-    border: '1px solid var(--glass-border)',
-    boxShadow: 'var(--glass-shadow)',
-    transition: 'all 0.3s ease'
-};
-
-const hoverStyle = {
-    transform: 'translateY(-8px)',
-    boxShadow: '0 24px 42px rgba(0, 0, 0, 0.5)'
-};
 
 const MAX_UPLOAD_SIZE_BYTES = 20 * 1024 * 1024;
 const MAX_UPLOAD_PAGES = 15;
@@ -78,7 +62,6 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const isAdmin = user.role === 'ADMIN';
     const displayUsername = user.username || 'Loading...';
-    const { theme, toggleTheme } = useTheme();
 
     // --- INITIAL DATA FETCHING ---
     useEffect(() => {
@@ -187,12 +170,9 @@ const Dashboard = () => {
         setFileStats(null);
 
         const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-
-        // Set temporary loading state
         setFileStats({ size: sizeMB, pages: "Calculating..." });
 
         try {
-            // Load PDF to count pages
             const arrayBuffer = await file.arrayBuffer();
             const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
             const pageCount = pdfDoc.getPageCount();
@@ -211,7 +191,6 @@ const Dashboard = () => {
         }
     };
 
-    // --- UPDATED UPLOAD HANDLER (ASYNC POLLING) ---
     const handleUpload = async () => {
         if (!selectedFile) return;
 
@@ -225,9 +204,8 @@ const Dashboard = () => {
         try {
             toast.info(`Uploading ${contractType}...`);
 
-            // 1. Initial Upload Request (Returns fast)
             const response = await api.post('/contracts/upload', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
+                headers: { 'Content-Type': undefined },
                 onUploadProgress: (event) => {
                     if (!event.total) return;
                     const uploadPercent = Math.round((event.loaded / event.total) * 20);
@@ -239,17 +217,12 @@ const Dashboard = () => {
             setAnalysisProgress((prev) => Math.max(prev, 25));
             toast.info("AI Analysis running in background...");
 
-            // 2. Refresh list immediately to show the "Processing" card
             fetchContracts();
             fetchQuota();
 
-            // 3. Start Polling Loop
             let isAnalysisComplete = false;
             while (!isAnalysisComplete) {
-                // Wait 2 seconds
                 await new Promise(resolve => setTimeout(resolve, 2000));
-
-                // Check Status
                 const statusRes = await api.get(`/contracts/${contractId}/status`);
                 const status = statusRes.data.status;
                 const progress = statusRes.data.progress;
@@ -263,17 +236,13 @@ const Dashboard = () => {
                     isAnalysisComplete = true;
                     setAnalysisProgress(100);
                     toast.success("Analysis Complete!");
-                    fetchContracts(); // Final refresh to show results
-
-                    // Reset inputs
+                    fetchContracts();
                     clearSelectedFile();
-
                 } else if (status === 'FAILED') {
                     isAnalysisComplete = true;
                     toast.error("Analysis Failed. Please try again.");
-                    fetchContracts(); // Refresh to show failure state if needed
+                    fetchContracts();
                 }
-                // If "PROCESSING", loop continues...
             }
 
         } catch (error) {
@@ -281,8 +250,8 @@ const Dashboard = () => {
                 toast.error("Analysis failed. Contract removed automatically.");
                 fetchContracts();
             } else {
-            const msg = error.response?.data?.message || "Upload failed!";
-            toast.error(msg);
+                const msg = error.response?.data?.message || "Upload failed!";
+                toast.error(msg);
             }
         } finally {
             setUploading(false);
@@ -338,146 +307,146 @@ const Dashboard = () => {
             <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
             <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>
 
-            <Container style={{ position: 'relative' }} className="app-page-content pt-3 pt-md-4">
+            <Container className="app-page-content pt-3 pt-md-4">
 
-                {/* --- 1. NAVBAR --- */}
-                <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-5 gap-3">
-                    <div className="text-center text-md-start">
+                {/* --- 1. FLOATING NAVBAR --- */}
+                <Navbar className="px-4 py-2 mb-5 nav-glass rounded-pill animate-3d-appear stagger-1" style={{ position: 'relative', zIndex: 10 }}>
+                    <Container fluid className="d-flex justify-content-between align-items-center p-0">
                         <div
-                            className="d-flex align-items-center justify-content-center justify-content-md-start gap-2 mb-1"
+                            className="d-flex align-items-center gap-2"
                             onClick={() => navigate('/')}
                             style={{ cursor: 'pointer' }}
-                            title="Go to Home Page"
                         >
-                             {isAdmin ? <FaShieldAlt className="text-danger" size={24} /> : <FaFileContract className="text-primary" size={24} />}
-                             <h3 className="fw-bold text-dark mb-0">{isAdmin ? "Admin Console" : "Contract Risk Analyzer"}</h3>
+                             <div className="glass-3d p-2 rounded-circle d-flex align-items-center justify-content-center text-primary">
+                                {isAdmin ? <FaShieldAlt size={20} className="text-danger" /> : <FaFileContract size={20} />}
+                             </div>
+                             <h4 className="fw-bold text-dark mb-0 d-none d-sm-block">
+                                {isAdmin ? "Admin Console" : "Dashboard"}
+                             </h4>
                         </div>
-                        <p className="text-muted mb-0 ms-1">Welcome back, <span className="fw-bold text-primary">{displayUsername}</span></p>
-                    </div>
 
-                    <div className="d-flex flex-wrap gap-2 w-100 w-md-auto-custom justify-content-center justify-content-md-end">
-                        <Button
-                            variant="white"
-                            className="shadow-sm rounded-pill fw-bold d-flex align-items-center justify-content-center flex-grow-0 px-3"
-                            onClick={toggleTheme}
-                            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                        >
-                            {theme === 'dark' ? <FaSun /> : <FaMoon />}
-                        </Button>
-                        <Button variant="white" className="shadow-sm rounded-pill fw-bold text-primary border flex-grow-1 flex-md-grow-0-custom" onClick={() => navigate('/chat/general')}>
-                            <FaComments className="me-2" /> AI Chat
-                        </Button>
+                        <div className="d-flex align-items-center gap-2">
+                            <Button className="dashboard-nav-cta px-2 px-md-3 py-2 fw-bold rounded-pill d-flex align-items-center" onClick={() => navigate('/chat/general')}>
+                                <FaComments className="me-md-2" /> 
+                                <span className="d-none d-md-inline">AI Counsel</span>
+                            </Button>
 
-                        <Dropdown align="end">
-                            <Dropdown.Toggle variant="white" id="profile-dropdown" className="d-flex align-items-center border shadow-sm rounded-pill px-3 py-2 text-dark bg-white">
-                                <FaUserCircle size={20} className="me-2 text-secondary" />
-                                <span className="d-none d-sm-inline">{displayUsername}</span> {isAdmin && <Badge bg="danger" className="ms-2">ADMIN</Badge>}
-                            </Dropdown.Toggle>
-                            <Dropdown.Menu className="shadow-lg border-0 p-0 mt-2 rounded-3 overflow-hidden" style={{ minWidth: '240px' }}>
-                                <div className="px-4 py-3 bg-light border-bottom">
-                                    <div className="fw-bold text-dark">{displayUsername}</div>
-                                    <div className="small text-muted text-truncate">{user.email}</div>
-                                </div>
-                                <div className="p-2">
-                                    <Dropdown.Item onClick={() => navigate('/settings')} className="rounded py-2">
-                                        <FaCog className="me-2 text-muted" /> Settings
-                                    </Dropdown.Item>
-                                    <Dropdown.Divider />
-                                    <Dropdown.Item onClick={handleLogout} className="rounded py-2 text-danger">
-                                        <FaSignOutAlt className="me-2" /> Logout
-                                    </Dropdown.Item>
-                                </div>
-                            </Dropdown.Menu>
-                        </Dropdown>
-                    </div>
-                </div>
+                            <Dropdown align="end">
+                                <Dropdown.Toggle variant="white" className="glass-3d d-flex align-items-center rounded-pill px-3 py-2 text-dark border-0">
+                                    <FaUserCircle size={20} className="me-2 text-primary pulse" />
+                                    <span className="d-none d-sm-inline fw-bold small">{displayUsername}</span>
+                                </Dropdown.Toggle>
+                                <Dropdown.Menu className="glass-3d border-0 p-0 mt-3 rounded-4 overflow-hidden" style={{ minWidth: '220px' }}>
+                                    <div className="px-4 py-3 border-bottom border-secondary border-opacity-10">
+                                        <div className="fw-bold text-dark">{displayUsername}</div>
+                                        <div className="small text-muted text-truncate">{user.email}</div>
+                                        {isAdmin && <Badge bg="danger" className="mt-2 rounded-pill">SYSTEM ADMIN</Badge>}
+                                    </div>
+                                    <div className="p-2">
+                                        <Dropdown.Item onClick={() => navigate('/settings')} className="rounded-3 py-2">
+                                            <FaCog className="me-2 text-muted" /> Settings
+                                        </Dropdown.Item>
+                                        <Dropdown.Divider className="opacity-10" />
+                                        <Dropdown.Item onClick={handleLogout} className="rounded-3 py-2 text-danger fw-bold">
+                                            <FaSignOutAlt className="me-2" /> Logout
+                                        </Dropdown.Item>
+                                    </div>
+                                </Dropdown.Menu>
+                            </Dropdown>
+                        </div>
+                    </Container>
+                </Navbar>
 
                 {/* --- 2. QUOTA WARNING --- */}
                 {!isAdmin && remainingQuota?.remaining === 0 && (
-                    <Alert variant="warning" className="mb-4 shadow-sm border-0 border-start border-warning border-5 rounded-3 bg-white">
-                        <div className="d-flex align-items-center fw-bold text-dark">
-                            <FaClock className="me-2 text-warning" size={20} />
-                            <span>
-                                Daily Quota Exceeded. Refill in: <span className="text-danger fs-5 ms-2 font-monospace">{timerString || "..."}</span>
-                            </span>
+                    <Alert className="mb-4 glass-3d border-0 border-start border-warning border-5 rounded-4 animate-3d-appear stagger-1" style={{ background: 'rgba(255, 193, 7, 0.05)' }}>
+                        <div className="d-flex align-items-center fw-bold text-dark p-2">
+                            <FaClock className="me-3 text-warning pulse" size={24} />
+                            <div>
+                                <div className="small text-muted uppercase ls-1">Quota Exceeded</div>
+                                <span>Refill incoming in: <span className="text-danger fs-5 ms-1 font-monospace">{timerString || "..." }</span></span>
+                            </div>
                         </div>
                     </Alert>
                 )}
 
                 {/* --- 3. STATS & UPLOAD ROW --- */}
-                <Row className="g-4 mb-5">
+                <Row className="g-4 mb-5 animate-3d-appear stagger-2">
                     {!isAdmin && (
-                        <Col md={12} lg={6}>
-                            <Card className="border-0 h-100" style={{ ...glassStyle, background: 'var(--gradient-accent)', color: 'var(--text-primary)' }}>
-                                <Card.Body className="p-4 d-flex flex-column justify-content-center">
-                                    <div className="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <h6 className="text-white-50 text-uppercase small fw-bold ls-1 mb-1">Daily Credits</h6>
-                                            <h2 className="fw-bold mb-0 display-5">
-                                                {remainingQuota?.isUnlimited ? <FaInfinity /> : remainingQuota?.remaining}
-                                            </h2>
-                                            <p className="text-white-50 small mt-2 mb-0">
-                                                <FaCalendarCheck className="me-1"/> After Exceeded your quota limit, you have to wait 1 hour to upload new Contracts.
-                                            </p>
-                                        </div>
-                                        <div className="bg-white bg-opacity-10 p-3 rounded-circle text-warning">
-                                            <FaCreditCard size={32} />
-                                        </div>
+                        <Col md={12} lg={5}>
+                            <Card className="border-0 h-100 glass-3d overflow-hidden" style={{ borderRadius: '28px' }}>
+                                <div className="position-absolute top-0 end-0 p-4 opacity-10">
+                                    <FaCreditCard size={120} style={{ transform: 'rotate(-15deg)' }} />
+                                </div>
+                                <Card.Body className="p-4 d-flex flex-column justify-content-center" style={{ zIndex: 1 }}>
+                                    <h6 className="text-muted text-uppercase small fw-bold ls-2 mb-2">Available Credits</h6>
+                                    <div className="d-flex align-items-baseline gap-3 mb-3">
+                                        <h2 className="display-3 fw-bold text-primary mb-0">
+                                            {remainingQuota?.isUnlimited ? <FaInfinity /> : remainingQuota?.remaining}
+                                        </h2>
+                                        <Badge bg="primary-subtle" className="text-primary rounded-pill px-3 glass-3d border-0">DAILY PASS</Badge>
+                                    </div>
+                                    <div className="glass-3d-inset p-3 rounded-4 bg-white bg-opacity-20 mt-auto">
+                                        <p className="small mb-0 text-muted">
+                                            <FaInfoCircle className="me-2 text-primary" />
+                                            Limits reset hourly after depletion. Admin overrides applied.
+                                        </p>
                                     </div>
                                 </Card.Body>
                             </Card>
                         </Col>
                     )}
 
-                    <Col md={12} lg={!isAdmin ? 6 : 12}>
-                        <Card className="border-0 h-100" style={glassStyle}>
-                            <Card.Body className="p-3 p-md-4">
+                    <Col md={12} lg={!isAdmin ? 7 : 12}>
+                        <Card className="border-0 h-100 glass-3d" style={{ borderRadius: '28px' }}>
+                            <Card.Body className="p-4">
                                 <div className="d-flex justify-content-between align-items-center mb-4">
-                                    <h5 className="fw-bold mb-0 text-dark"><FaUpload className="me-2 text-primary" />Quick Upload</h5>
-                                    {selectedFile && <Badge bg="success">File Selected</Badge>}
+                                    <h5 className="fw-bold mb-0 text-dark d-flex align-items-center">
+                                        <div className="glass-3d p-2 rounded-3 me-3 text-primary" style={{ background: 'var(--gradient-accent)', color: 'white !important' }}>
+                                            <FaShieldAlt style={{ color: 'white' }} />
+                                        </div>
+                                        Vault Deposit
+                                    </h5>
+                                    {selectedFile && <Badge bg="success" className="rounded-pill px-3 pulse">Ready to Scan</Badge>}
                                 </div>
-                                {/* --- 2. NEW INDICATOR TAB ADDED HERE --- */}
-                            <Alert variant="info" className="py-2 px-3 small border-0 bg-opacity-10 shadow-sm d-flex align-items-center mb-3">
-                                <FaInfoCircle className="me-2 flex-shrink-0" size={16} />
-                                <span>
-                                    <strong>Limits:</strong> Max File Size: <strong>20MB</strong> | Max Length: <strong>15 Pages</strong>
-                                </span>
-                            </Alert>
-                            {/* ------------------------------------- */}
-
-                                {/* --- UPLOAD CONTROLS --- */}
+                                
                                 <div className="d-flex flex-column gap-3">
-                                    <div className="d-flex flex-column flex-md-row gap-2">
-                                        <Form.Select
-                                            value={jurisdiction}
-                                            onChange={(e) => setJurisdiction(e.target.value)}
-                                            className="shadow-sm border-0 py-2 bg-light fw-bold text-dark flex-fill"
-                                            disabled={uploading}
-                                        >
-                                            <option value="General">General Law</option>
-                                            <option value="India">🇮🇳 India</option>
-                                            <option value="United States">🇺🇸 USA</option>
-                                            <option value="United Kingdom">🇬🇧 UK</option>
-                                            <option value="European Union">🇪🇺 EU</option>
-                                        </Form.Select>
+                                    <div className="d-flex flex-column flex-md-row gap-3">
+                                        <div className="flex-fill">
+                                            <Form.Label className="small fw-bold text-muted ms-2 mb-1 uppercase ls-1">Jurisdiction</Form.Label>
+                                            <Form.Select
+                                                value={jurisdiction}
+                                                onChange={(e) => setJurisdiction(e.target.value)}
+                                                className="glass-3d-inset border-0 py-2 fw-bold text-dark rounded-4"
+                                                disabled={uploading}
+                                            >
+                                                <option value="General">Global Standards</option>
+                                                <option value="India">🇮🇳 India</option>
+                                                <option value="United States">🇺🇸 United States</option>
+                                                <option value="United Kingdom">🇬🇧 United Kingdom</option>
+                                                <option value="European Union">🇪🇺 European Union</option>
+                                            </Form.Select>
+                                        </div>
 
-                                        <Form.Select
-                                            value={contractType}
-                                            onChange={(e) => setContractType(e.target.value)}
-                                            className="shadow-sm border-0 py-2 bg-light fw-bold text-dark flex-fill"
-                                            disabled={uploading}
-                                        >
-                                            <option value="General Contract">General Contract</option>
-                                            <option value="Employment Agreement">Employment Agreement</option>
-                                            <option value="Non-Disclosure Agreement (NDA)">NDA</option>
-                                            <option value="Software License (SaaS)">SaaS Agreement</option>
-                                            <option value="Lease Agreement">Lease Agreement</option>
-                                            <option value="Freelance Contract">Freelance Contract</option>
-                                        </Form.Select>
+                                        <div className="flex-fill">
+                                            <Form.Label className="small fw-bold text-muted ms-2 mb-1 uppercase ls-1">Document Type</Form.Label>
+                                            <Form.Select
+                                                value={contractType}
+                                                onChange={(e) => setContractType(e.target.value)}
+                                                className="glass-3d-inset border-0 py-2 fw-bold text-dark rounded-4"
+                                                disabled={uploading}
+                                            >
+                                                <option value="General Contract">General Contract</option>
+                                                <option value="Employment Agreement">Employment Agreement</option>
+                                                <option value="Non-Disclosure Agreement (NDA)">NDA</option>
+                                                <option value="Software License (SaaS)">SaaS Terms</option>
+                                                <option value="Lease Agreement">Lease Agreement</option>
+                                                <option value="Freelance Contract">Service Contract</option>
+                                            </Form.Select>
+                                        </div>
                                     </div>
 
-                                    <div className="d-flex flex-column flex-md-row gap-2">
+                                    <div className="d-flex flex-column flex-md-row gap-3 mt-2">
                                         <div className="position-relative flex-grow-1">
                                             <Form.Control
                                                 type="file"
@@ -485,18 +454,16 @@ const Dashboard = () => {
                                                 onChange={handleFileSelect}
                                                 accept="application/pdf"
                                                 disabled={uploading || (!isAdmin && remainingQuota?.remaining === 0)}
-                                                className="shadow-sm border-0 py-2 pe-5"
+                                                className="glass-3d-inset border-0 py-3 pe-5 rounded-4"
                                             />
                                             {selectedFile && !uploading && (
                                                 <Button
                                                     variant="link"
                                                     onClick={clearSelectedFile}
-                                                    className="position-absolute top-50 end-0 translate-middle-y me-2 p-0 text-danger d-flex align-items-center justify-content-center"
-                                                    style={{ width: '28px', height: '28px', zIndex: 5 }}
-                                                    title="Unselect PDF"
-                                                    aria-label="Unselect selected PDF"
+                                                    className="position-absolute top-50 end-0 translate-middle-y me-3 p-0 text-danger"
+                                                    style={{ zIndex: 5 }}
                                                 >
-                                                    <FaTimesCircle size={18} />
+                                                    <FaTimesCircle size={20} />
                                                 </Button>
                                             )}
                                         </div>
@@ -505,28 +472,30 @@ const Dashboard = () => {
                                             variant="primary"
                                             onClick={handleUpload}
                                             disabled={uploading || !selectedFile}
-                                            className="shadow-lg rounded-pill px-4 fw-bold"
-                                            style={{ minWidth: '150px' }}
+                                            className="btn-primary glass-3d rounded-pill px-5 fw-bold"
                                         >
-                                            {uploading ? <><FaRobot className="me-2 pulse" /> {`Analyzing ${analysisProgress}%`}</> : "Analyze"}
+                                            {uploading ? <><Spinner animation="border" size="sm" className="me-2" /> {analysisProgress}%</> : "Run Audit"}
                                         </Button>
                                     </div>
-                                    {isAdmin && fileStats && (
-                                        <div className="mt-2 text-dark bg-warning bg-opacity-10 p-2 rounded border border-warning d-flex align-items-center small">
-                                            <FaEye className="me-2 text-warning" />
-                                            <span className="fw-bold me-2">ADMIN PREVIEW:</span>
-                                            <span className="me-3">Size: <strong>{fileStats.size} MB</strong></span>
-                                            <span>Pages: <strong>{fileStats.pages}</strong></span>
-                                        </div>
-                                    )}
+
+                                    <div className="d-flex flex-wrap gap-3 mt-2">
+                                        <Badge bg="secondary-subtle" className="text-muted fw-normal glass-3d border-0 px-3">MAX 20MB</Badge>
+                                        <Badge bg="secondary-subtle" className="text-muted fw-normal glass-3d border-0 px-3">MAX 15 PAGES</Badge>
+                                        {isAdmin && fileStats && (
+                                            <Badge bg="warning-subtle" className="text-warning fw-bold glass-3d border-0 px-3">
+                                                ADMIN: {fileStats.size}MB | {fileStats.pages}P
+                                            </Badge>
+                                        )}
+                                    </div>
                                 </div>
+
                                 {uploading && (
-                                    <div className="mt-3">
-                                        <div className="d-flex justify-content-between align-items-center small text-muted mb-2">
-                                            <span>Analysis Progress</span>
-                                            <span className="fw-bold">{analysisProgress}%</span>
+                                    <div className="mt-4 px-2">
+                                        <div className="d-flex justify-content-between align-items-center small text-muted mb-2 fw-bold">
+                                            <span className="d-flex align-items-center gap-2"><FaRobot /> AI Decomposition...</span>
+                                            <span>{analysisProgress}%</span>
                                         </div>
-                                        <ProgressBar animated={analysisProgress < 100} now={analysisProgress} />
+                                        <ProgressBar animated now={analysisProgress} className="glass-3d-inset" style={{ height: '10px' }} />
                                     </div>
                                 )}
                             </Card.Body>
@@ -535,20 +504,20 @@ const Dashboard = () => {
                 </Row>
 
                 {/* --- 4. SEARCH & FILTER --- */}
-                <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
-                    <h4 className="fw-bold text-dark mb-0">
-                        {isAdmin ? "System Contracts" : "My Contracts"}
-                        <span className="text-muted ms-2 fs-6 fw-normal">({filteredContracts.length})</span>
+                <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3 animate-3d-appear stagger-3">
+                    <h4 className="fw-bold text-dark mb-0 d-flex align-items-center">
+                        {isAdmin ? "System Archives" : "Your Vault"}
+                        <Badge bg="primary-subtle" className="text-primary ms-3 fs-6 rounded-pill border-0 glass-3d px-3">{filteredContracts.length}</Badge>
                     </h4>
 
                     <InputGroup
-                        className="shadow-sm rounded-pill overflow-hidden border-0 bg-white mobile-full-width"
-                        style={{ width: '300px' }}
+                        className="glass-3d-inset rounded-pill overflow-hidden border-0 mobile-full-width"
+                        style={{ width: '320px' }}
                     >
-                        <InputGroup.Text className="bg-white border-0 ps-3 text-muted"><FaSearch /></InputGroup.Text>
+                        <InputGroup.Text className="bg-transparent border-0 ps-3 text-muted"><FaSearch /></InputGroup.Text>
                         <Form.Control
-                            placeholder="Search files..."
-                            className="border-0 shadow-none"
+                            placeholder="Search documents..."
+                            className="bg-transparent border-0 shadow-none py-2"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -556,7 +525,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* --- 5. CONTRACTS GRID --- */}
-                <Row xs={1} md={2} lg={3} xl={4} className="g-3 g-md-4">
+                <Row xs={1} md={2} lg={3} xl={4} className="g-4 animate-3d-appear stagger-4">
                     {filteredContracts.map((contract) => {
                         let riskLevel = 'low';
                         try {
@@ -564,14 +533,13 @@ const Dashboard = () => {
                                 const analysis = JSON.parse(contract.analysisJson);
                                 if (analysis.risk_level) riskLevel = analysis.risk_level.toLowerCase();
                             }
-                        } catch {
-                            // Ignore invalid or partial analysis JSON
+                        } catch (err) {
+                            console.error("Parse error:", err);
                         }
 
                         const displayFilename = getSafeFilename(contract);
                         const normalizedStatus = normalizeStatus(contract?.status);
                         const isProcessing = normalizedStatus === 'PROCESSING';
-                        const isFailed = normalizedStatus === 'FAILED';
                         const processingProgress = Math.max(
                             0,
                             Math.min(99, typeof contract.analysisProgress === 'number' ? contract.analysisProgress : 0)
@@ -581,119 +549,96 @@ const Dashboard = () => {
 
                         return (
                             <Col key={contract.id}>
-                                <Card
-                                    className={`h-100 border-0 ${isAdmin ? 'border-top border-warning border-3' : ''}`}
-                                    style={glassStyle}
-                                    onMouseEnter={(e) => Object.assign(e.currentTarget.style, hoverStyle)}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.transform = 'none';
-                                        e.currentTarget.style.boxShadow = glassStyle.boxShadow;
-                                    }}
-                                >
+                                <Card className="h-100 border-0 glass-3d" style={{ borderRadius: '24px' }}>
                                     <Card.Body className="d-flex flex-column p-4">
-                                        <div className="d-flex justify-content-between align-items-start mb-3">
-                                            <div className="bg-white p-2 rounded shadow-sm text-primary">
+                                        <div className="d-flex justify-content-between align-items-start mb-4">
+                                            <div className="glass-3d p-2 rounded-circle text-primary d-flex align-items-center justify-content-center" style={{ width: '42px', height: '42px' }}>
                                                 <FaFileContract size={20} />
                                             </div>
 
-                                            {/* --- STATUS BADGE LOGIC --- */}
                                             {isProcessing ? (
-                                                <Badge bg="secondary" className="py-2 px-3 rounded-pill fw-normal d-flex align-items-center shadow-sm">
-                                                    <FaClock className="me-2 spinner-border spinner-border-sm" />
-                                                    <span>{`Processing ${processingProgress}%`}</span>
-                                                </Badge>
-                                            ) : isFailed ? (
-                                                <Badge bg="danger" className="py-2 px-3 rounded-pill fw-normal d-flex align-items-center shadow-sm">
-                                                    <FaTimesCircle /> <span className="ms-1">Analysis Failed</span>
+                                                <Badge bg="secondary-subtle" className="text-secondary py-2 px-3 rounded-pill fw-bold d-flex align-items-center glass-3d border-0 shadow-sm">
+                                                    <div className="spinner-border spinner-border-sm me-2" style={{ width: '12px', height: '12px' }}></div>
+                                                    <span style={{ fontSize: '0.7rem' }}>{processingProgress}% SCAN</span>
                                                 </Badge>
                                             ) : (
-                                                <Badge bg={riskBadge.variant} className="py-2 px-3 rounded-pill fw-normal d-flex align-items-center shadow-sm">
-                                                    {riskBadge.icon} <span className="ms-1">{riskBadge.text}</span>
+                                                <Badge bg={`${riskBadge.variant}-subtle`} className={`text-${riskBadge.variant} py-2 px-3 rounded-pill fw-bold d-flex align-items-center glass-3d border-0 shadow-sm`}>
+                                                    <span style={{ fontSize: '0.7rem' }}>{riskBadge.text.toUpperCase()}</span>
                                                 </Badge>
                                             )}
-                                            {/* ------------------------- */}
                                         </div>
 
-                                        <Card.Title className="text-truncate fw-bold text-dark mb-1" title={displayFilename}>
+                                        <Card.Title className="text-truncate fw-bold text-dark mb-1 h5" title={displayFilename}>
                                             {displayFilename}
                                         </Card.Title>
 
                                         {isAdmin && (
-                                            <div className="mb-2 text-muted small bg-light rounded p-1 px-2 d-inline-block border">
-                                                <FaUser className="me-1" /> {contract.ownerUsername}
+                                            <div className="mb-2">
+                                                <Badge bg="warning-subtle" className="text-warning-emphasis fw-bold rounded-pill border-0 px-2 py-1">
+                                                    <FaUser className="me-1" size={10} /> {contract.ownerUsername}
+                                                </Badge>
                                             </div>
                                         )}
-                {/* --- NEW: ADMIN-ONLY STATS ON CARD --- */}
-                    {isAdmin && contract.fileSize && (
-                        <div className="mb-3 d-flex gap-3 text-muted" style={{ fontSize: '0.75rem' }}>
-                            <div className="d-flex align-items-center bg-warning bg-opacity-10 px-2 py-1 rounded">
-                                <span className="fw-bold text-dark me-1">Size:</span>
-                                {(contract.fileSize / (1024 * 1024)).toFixed(2)} MB
+
+                                        <Card.Text className="text-muted small mb-4 d-flex align-items-center">
+                                            <FaClock className="me-2 opacity-50" />
+                                            {formattedUploadDate}
+                                        </Card.Text>
+
+                                        <div className="mt-auto">
+                                            <Button
+                                                variant="outline-dark"
+                                                size="sm"
+                                                className="w-100 rounded-pill fw-bold mb-2 glass-3d border-0 py-2 btn-black-hover"
+                                                disabled={isProcessing}
+                                                onClick={() => navigate(`/contracts/${contract.id}`)}
+                                            >
+                                                Audit Report <FaArrowRight className="ms-2" size={12} />
+                                            </Button>
+                                            <div className="d-flex gap-2">
+                                                <Button size="sm" className="dashboard-nav-cta flex-grow-1 rounded-pill fw-bold py-2" onClick={() => navigate(`/chat/${contract.id}`)}>
+                                                    <FaComments className="me-2" /> Counsel
+                                                </Button>
+                                                <Button variant="white" size="sm" className="glass-3d border-0 rounded-circle text-danger p-2 d-flex align-items-center justify-content-center" onClick={(e) => handleDeleteClick(contract.id, e)} style={{ width: '38px', height: '38px' }}>
+                                                    <FaTrash />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        );
+                    })}
+                    {filteredContracts.length === 0 && !uploading && (
+                        <Col xs={12} className="text-center py-5">
+                            <div className="glass-3d p-5 rounded-5 d-inline-block">
+                                <FaSearch size={50} className="text-muted mb-4 opacity-20" />
+                                <h5 className="text-muted fw-bold">Vault is Empty</h5>
+                                <p className="text-muted small mb-0">No documents found matching your search</p>
                             </div>
-                            {contract.pageCount !== null && (
-                                <div className="d-flex align-items-center bg-warning bg-opacity-10 px-2 py-1 rounded">
-                                    <span className="fw-bold text-dark me-1">Pages:</span>
-                                    {contract.pageCount}
-                                </div>
-                            )}
-                        </div>
+                        </Col>
                     )}
-                <Card.Text className="text-muted small mb-4">
-                    <FaClock className="me-1" />
-                    {formattedUploadDate}
-                </Card.Text>
-
-                {isFailed && (
-                    <Alert variant="danger" className="py-2 px-3 small mb-3">
-                        Analysis failed. Please retry upload or delete this file.
-                    </Alert>
-                )}
-
-                <div className="mt-auto d-grid gap-2">
-                    <Button
-                        variant="outline-primary"
-                        size="sm"
-                        className="rounded-pill fw-semibold"
-                        disabled={isProcessing} // Disable if processing
-                        onClick={() => navigate(`/contracts/${contract.id}`)}
-                    >
-                        View Report <FaArrowRight className="ms-1" size={10} />
-                    </Button>
-                    <div className="d-flex gap-2">
-                        <Button variant="primary" size="sm" className="flex-grow-1 rounded-pill fw-semibold shadow-sm" onClick={() => navigate(`/chat/${contract.id}`)}>
-                            <FaComments className="me-1" /> Chat
-                        </Button>
-                        <Button variant="light" size="sm" className="rounded-circle text-danger shadow-sm" onClick={(e) => handleDeleteClick(contract.id, e)} title="Delete">
-                            <FaTrash />
-                        </Button>
-                    </div>
-                </div>
-            </Card.Body>
-        </Card>
-    </Col>
-);
-})}
                 </Row>
 
             </Container>
 
             {/* DELETE MODAL */}
             <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered backdrop="static">
-                <Modal.Header closeButton className="border-0 pb-0">
-                    <Modal.Title className="text-danger fw-bold">
-                        <FaExclamationTriangle className="me-2" /> Confirm Deletion
+                <Modal.Header closeButton className="border-0 bg-transparent">
+                    <Modal.Title className="text-danger fw-bold h4">
+                        <FaTrash className="me-2" /> Final Disposal
                     </Modal.Title>
                 </Modal.Header>
-                <Modal.Body className="pt-2">
-                    <p className="mb-0 text-muted">Are you sure you want to permanently delete this contract?</p>
-                    {isAdmin && <Alert variant="danger" className="mt-3 mb-0 py-2 small fw-bold">Admin Action: You are deleting a user's file.</Alert>}
+                <Modal.Body className="bg-transparent">
+                    <p className="mb-4 text-muted fw-semibold">Are you certain you wish to permanently purge this document from the AI vault? This action is irreversible.</p>
+                    {isAdmin && <Alert variant="danger" className="glass-3d border-0 text-danger fw-bold small rounded-4 py-3">ADMIN PROTOCOL: You are purging a managed entity file.</Alert>}
                 </Modal.Body>
-                <Modal.Footer className="border-0 pt-0">
-                    <Button variant="light" onClick={() => setShowDeleteModal(false)} className="rounded-pill px-4 fw-bold">
+                <Modal.Footer className="border-0 bg-transparent pb-4">
+                    <Button variant="link" onClick={() => setShowDeleteModal(false)} className="text-decoration-none text-muted fw-bold px-4">
                         Cancel
                     </Button>
-                    <Button variant="danger" onClick={confirmDelete} className="rounded-pill px-4 fw-bold shadow-sm">
-                        Yes, Delete It
+                    <Button variant="danger" onClick={confirmDelete} className="btn-danger glass-3d border-0 rounded-pill px-4 fw-bold">
+                        Confirm Purge
                     </Button>
                 </Modal.Footer>
             </Modal>

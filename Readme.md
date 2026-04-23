@@ -13,7 +13,6 @@ An AI-powered web application designed to help users upload, scan, and analyze l
 * **Admin Console:** Dedicated admin capabilities to monitor system uploads, view file sizes and page counts, and manage user data.
 * **Rate Limiting & Quotas:** Built-in daily upload quotas for standard users with live countdown timers.
 * **Interactive Chat:** Chat directly with the AI regarding specific contracts to ask legal questions and get summaries.
-* **Dockerized:** Fully containerized with a multi-stage Docker build for easy deployment to cloud platforms like Koyeb or AWS.
 
 ---
 
@@ -35,7 +34,6 @@ An AI-powered web application designed to help users upload, scan, and analyze l
 
 **Database & Infrastructure**
 * MongoDB / MongoDB Atlas
-* Docker & Docker Compose
 
 ---
 
@@ -46,7 +44,6 @@ Make sure you have the following installed on your machine:
 * **Java 17**
 * **Node.js (v20+)**
 * **Maven**
-* **Docker & Docker Compose** (Optional, but recommended)
 
 ### 1. Environment Variables Setup
 Create an `application.properties` (or `application.yml`) file in `src/main/resources/` with the following configurations:
@@ -72,26 +69,24 @@ jwt.secret=your-256-bit-secure-secret-key-here
 
 # AI API Keys
 ai.api.key=your-ai-api-key
+```
 
-2. Running via Docker (Recommended)
-The easiest way to run the entire application (Frontend + Backend + Tesseract) is using Docker.
-# Build and run the containers in detached mode
-docker-compose up --build -d
-
-The application will be accessible at: http://localhost:8080
-
-3. Running Locally (Manual Setup)
-Start the Backend:
+### 2. Running Locally
+**Start the Backend:**
 Ensure you have Tesseract OCR installed on your local OS, then run:
+```bash
 ./mvnw clean install
 ./mvnw spring-boot:run
+```
 The Spring Boot server will start on port 8080.
 
-Start the Frontend:
+**Start the Frontend:**
 Open a new terminal window:
+```bash
 cd client
 npm install
 npm run dev
+```
 The React development server will start on port 5173.
 
 🔒 Security Architecture
@@ -104,10 +99,3 @@ XSS Protection: Tokens are never stored in localStorage. They are managed entire
 CSRF Protection: Configured via Spring Security with explicit CORS origin mappings.
 
 Auto-Logout: Frontend implements an inactivity tracker that automatically destroys the session after 30 minutes of idle time.
-
-🐳 Deployment (Koyeb / Render / AWS)
-This project uses a Multi-Stage Dockerfile designed for low-memory cloud environments (e.g., 512MB RAM instances).
-
-When deploying, ensure you configure the Java memory limit to prevent Out-Of-Memory (OOM) crashes alongside Tesseract:
-
-Set Environment Variable: JAVA_OPTS = -Xmx256m

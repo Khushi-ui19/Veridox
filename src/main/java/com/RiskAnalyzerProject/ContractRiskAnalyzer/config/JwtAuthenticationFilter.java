@@ -52,9 +52,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 1. Check if the header contains a Bearer Token
         if (jwt != null) {
             if (tokenBlacklistService.isBlacklisted(jwt)) {
-                // Token is dead. Reject request immediately.
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write("Token is invalid (Logged out)");
+                // Treat a blacklisted token as unauthenticated instead of hard-failing the request.
+                // This allows public endpoints like /api/auth/login to work even if the browser still
+                // sends an old HttpOnly cookie from a previous logout.
+                SecurityContextHolder.clearContext();
+                filterChain.doFilter(request, response);
                 return;
             }
             try {

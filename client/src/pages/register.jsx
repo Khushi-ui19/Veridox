@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import api from '../api/axiosConfig';
+import api, { getBackendOrigin } from '../api/axiosConfig';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Container, Card, Form, Button, InputGroup, Spinner } from 'react-bootstrap';
+import { Container, Card, Form, Button, InputGroup, Spinner, Badge } from 'react-bootstrap';
 import {
     FaUserPlus,
     FaUser,
@@ -13,15 +13,8 @@ import {
     FaEye,
     FaEyeSlash,
     FaCheckCircle,
-    FaRedo // Icon for Resend
+    FaRedo
 } from 'react-icons/fa';
-
-// --- THEME PANEL STYLE ---
-const glassStyle = {
-    background: 'var(--glass-surface)',
-    border: '1px solid var(--glass-border)',
-    boxShadow: 'var(--glass-shadow)'
-};
 
 const Register = () => {
     // Form State
@@ -56,13 +49,11 @@ const Register = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            // Sends data to backend. Backend saves to RAM and sends Email.
             await api.post('/auth/register', { username, email, password });
             toast.success("Verification Code sent to email!");
-            setStep(2); // Move to OTP step
-            setResendCooldown(30); // Start 30s cooldown
+            setStep(2);
+            setResendCooldown(30);
         } catch (err) {
-//             const errorMsg = err.response?.data?.message || "Registration failed. Please check your email and try again.";
             toast.error(err.message);
         } finally {
             setLoading(false);
@@ -74,7 +65,6 @@ const Register = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            // Sends OTP to backend. Backend saves to MongoDB.
             await api.post('/auth/register/verify', { email, otp });
             toast.success("Account Verified! Redirecting to login...");
             setTimeout(() => navigate('/login'), 1500);
@@ -86,7 +76,6 @@ const Register = () => {
         }
     };
 
-    // RESEND OTP FUNCTION
     const handleResendOtp = async () => {
         if (resendCooldown > 0) return;
 
@@ -94,11 +83,10 @@ const Register = () => {
         try {
             await api.post('/auth/register/resend-otp', { email });
             toast.info("New code sent!");
-            setResendCooldown(60); // Reset cooldown
+            setResendCooldown(60);
         } catch (err) {
             const errorMsg = err.response?.data?.message || "Could not resend code.";
             toast.error(errorMsg);
-            // If session expired (removed from RAM), go back to step 1
             if(errorMsg.toLowerCase().includes("expired")) {
                 setStep(1);
             }
@@ -109,100 +97,102 @@ const Register = () => {
 
     const handleGoogleRegister = () => {
         document.cookie = "auth_intent=register; path=/; max-age=300";
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-        window.location.href = `${baseUrl}/oauth2/authorization/google`;
+        window.location.href = `${getBackendOrigin()}/oauth2/authorization/google`;
     };
 
     return (
-        <div className="d-flex justify-content-center align-items-center min-vh-100 fade-in app-theme-page" style={{ overflowX: 'hidden' }}>
+        <div className="d-flex justify-content-center align-items-center min-vh-100 app-theme-page" style={{ overflowX: 'hidden' }}>
 
             {/* Background Blobs */}
-            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
-            <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>
+            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left" style={{ opacity: 0.3 }}></div>
+            <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right" style={{ opacity: 0.2 }}></div>
 
-            <Container className="app-page-content" style={{ maxWidth: '450px' }}>
-                <Card className="border-0 shadow-lg" style={glassStyle}>
-                    <Card.Body className="p-4">
-
-                        {/* Header: Back Button Logic */}
-                        <div className="text-start mb-2">
-                            <Button variant="link" onClick={() => step === 2 ? setStep(1) : navigate('/')} className="p-0 text-decoration-none text-secondary fw-bold small">
-                                <FaArrowLeft className="me-2" /> {step === 2 ? "Change Email" : "Back"}
+            <Container className="app-page-content animate-entrance" style={{ maxWidth: '440px' }}>
+                <Card className="border-0 glass-3d-deep shadow-2xl" style={{ borderRadius: '28px', background: 'rgba(255, 255, 255, 0.7)' }}>
+                    <Card.Body className="p-3 p-md-4">
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                            <Button variant="link" onClick={() => step === 2 ? setStep(1) : navigate('/')} className="nav-link-modern p-0 small d-flex align-items-center">
+                                <FaArrowLeft className="me-1" /> {step === 2 ? "Back" : "Home"}
                             </Button>
+                            <Badge bg="secondary" className="rounded-pill px-3 smallest opacity-75">IDENTITY v2</Badge>
                         </div>
 
                         {/* Title Section */}
                         <div className="text-center mb-3">
-                            <div className="bg-white p-2 rounded-circle shadow-sm d-inline-block mb-2 text-primary">
-                                {step === 1 ? <FaUserPlus size={28} /> : <FaCheckCircle size={28} />}
+                            <div className="p-2 rounded-circle glass-3d d-inline-block mb-2 text-primary animate-float-slow" style={{ background: 'white' }}>
+                                {step === 1 ? <FaUserPlus size={24} /> : <FaCheckCircle size={24} />}
                             </div>
-                            <h4 className="fw-bold text-dark mb-0">{step === 1 ? "Create Account" : "Verify Email"}</h4>
-                            {step === 2 && <small className="text-secondary">Enter the code sent to <strong>{email}</strong></small>}
+                            <h3 className="fw-bold text-dark mb-1">{step === 1 ? "Neural Identity" : "Verify Node"}</h3>
+                            {step === 2 ? (
+                                <p className="text-muted smallest">Token sent to <span className="text-primary fw-bold">{email}</span></p>
+                            ) : (
+                                <p className="text-muted smallest">Establish secure legal presence</p>
+                            )}
                         </div>
 
                         {/* STEP 1: REGISTRATION FORM */}
                         {step === 1 && (
                             <Form onSubmit={handleRegister}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-1">Username</Form.Label>
-                                    <InputGroup>
-                                        <InputGroup.Text className="bg-white border-end-0"><FaUser className="text-primary" /></InputGroup.Text>
+                                <Form.Group className="mb-2">
+                                    <Form.Label className="fw-bold text-secondary smallest text-uppercase ls-1 mb-1 ms-1">Alias</Form.Label>
+                                    <InputGroup className="glass-3d-inset rounded-3 overflow-hidden border-0 bg-white">
+                                        <InputGroup.Text className="bg-transparent border-0 ps-3 py-2"><FaUser size={14} className="text-primary" /></InputGroup.Text>
                                         <Form.Control
                                             type="text"
-                                            placeholder="Choose a username"
+                                            placeholder="Username"
                                             value={username}
                                             onChange={(e) => setUsername(e.target.value)}
                                             required
-                                            className="form-control border-start-0 ps-0 shadow-none"
+                                            className="bg-transparent border-0 py-2 shadow-none text-dark small"
+                                        />
+                                    </InputGroup>
+                                </Form.Group>
+
+                                <Form.Group className="mb-2">
+                                    <Form.Label className="fw-bold text-secondary smallest text-uppercase ls-1 mb-1 ms-1">Comms Port</Form.Label>
+                                    <InputGroup className="glass-3d-inset rounded-3 overflow-hidden border-0 bg-white">
+                                        <InputGroup.Text className="bg-transparent border-0 ps-3 py-2"><FaEnvelope size={14} className="text-primary" /></InputGroup.Text>
+                                        <Form.Control
+                                            type="email"
+                                            placeholder="name@nexus.com"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            required
+                                            className="bg-transparent border-0 py-2 shadow-none text-dark small"
                                         />
                                     </InputGroup>
                                 </Form.Group>
 
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-1">Email Address</Form.Label>
-                                    <InputGroup>
-                                        <InputGroup.Text className="bg-white border-end-0"><FaEnvelope className="text-primary" /></InputGroup.Text>
-                                        <Form.Control
-                                            type="email"
-                                            placeholder="name@example.com"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            required
-                                            className="form-control border-start-0 ps-0 shadow-none"
-                                        />
-                                    </InputGroup>
-                                </Form.Group>
-
-                                <Form.Group className="mb-4">
-                                    <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-1">Password</Form.Label>
-                                    <InputGroup>
-                                        <InputGroup.Text className="bg-white border-end-0"><FaLock className="text-primary" /></InputGroup.Text>
+                                    <Form.Label className="fw-bold text-secondary smallest text-uppercase ls-1 mb-1 ms-1">Master Key</Form.Label>
+                                    <InputGroup className="glass-3d-inset rounded-3 overflow-hidden border-0 bg-white">
+                                        <InputGroup.Text className="bg-transparent border-0 ps-3 py-2"><FaLock size={14} className="text-primary" /></InputGroup.Text>
                                         <Form.Control
                                             type={showPassword ? "text" : "password"}
-                                            placeholder="Create a strong password"
+                                            placeholder="Password"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             required
-                                            className="form-control border-start-0 border-end-0 ps-0 shadow-none"
+                                            className="bg-transparent border-0 py-2 shadow-none text-dark small"
                                         />
-                                        <Button variant="outline-secondary" className="border-start-0 bg-white text-secondary" onClick={() => setShowPassword(!showPassword)}>
-                                            {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                        <Button variant="link" className="bg-transparent border-0 text-muted pe-3 py-2" onClick={() => setShowPassword(!showPassword)}>
+                                            {showPassword ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
                                         </Button>
                                     </InputGroup>
                                 </Form.Group>
 
-                                <Button variant="primary" type="submit" className="w-100 btn fw-bold mb-3 shadow-sm rounded-pill py-2" disabled={loading}>
-                                    {loading ? <><Spinner animation="border" size="sm" className="me-2" /> Sending OTP...</> : "Sign Up"}
+                                <Button type="submit" className="w-100 nav-btn-modern py-2 mb-3 d-flex align-items-center justify-content-center" disabled={loading}>
+                                    {loading ? <Spinner animation="border" size="sm" className="me-2" /> : "Request Access"}
                                 </Button>
 
-                                <div className="d-flex align-items-center my-3">
-                                    <hr className="flex-grow-1 opacity-25" />
-                                    <span className="px-3 text-secondary small fw-bold">OR</span>
-                                    <hr className="flex-grow-1 opacity-25" />
+                                <div className="d-flex align-items-center mb-3">
+                                    <hr className="flex-grow-1 opacity-10" />
+                                    <span className="px-2 text-muted smallest fw-bold ls-1">OR</span>
+                                    <hr className="flex-grow-1 opacity-10" />
                                 </div>
 
-                                <Button variant="white" className="w-100 fw-bold border shadow-sm d-flex align-items-center justify-content-center py-2 rounded-pill bg-white text-dark hover-lift" onClick={handleGoogleRegister}>
-                                    <FaGoogle className="me-2 text-danger" /> Sign up with Google
+                                <Button variant="white" className="w-100 fw-bold glass-3d d-flex align-items-center justify-content-center py-2 rounded-3 text-dark border-0 shadow-sm hover-lift small" onClick={handleGoogleRegister}>
+                                    <FaGoogle className="me-2 text-danger" /> Google
                                 </Button>
                             </Form>
                         )}
@@ -210,45 +200,46 @@ const Register = () => {
                         {/* STEP 2: OTP VERIFICATION FORM */}
                         {step === 2 && (
                             <Form onSubmit={handleVerify}>
-                                <Form.Group className="mb-4">
-                                    <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-1">Verification Code</Form.Label>
+                                <div className="glass-3d-inset p-2 text-center mb-3 border-0 text-success fw-bold smallest rounded-3" style={{ background: 'rgba(16, 185, 129, 0.1)' }}>
+                                    <FaCheckCircle className="me-1" /> Transmission successful.
+                                </div>
+                                <Form.Group className="mb-3">
                                     <Form.Control
                                         type="text"
-                                        placeholder="000000"
-                                        className="text-center fs-4 letter-spacing-1 shadow-sm"
+                                        placeholder="00000000"
+                                        className="form-control glass-3d-inset text-center fs-3 fw-bold border-0 rounded-3 py-2 bg-white"
                                         maxLength="8"
                                         value={otp}
                                         onChange={(e) => setOtp(e.target.value)}
                                         required
-                                        style={{ letterSpacing: '0.2em', fontWeight: 'bold' }}
+                                        style={{ letterSpacing: '8px', color: 'var(--primary-color)' }}
                                     />
                                 </Form.Group>
 
-                                <Button variant="success" type="submit" className="w-100 btn fw-bold rounded-pill py-2 shadow-sm mb-3" disabled={loading}>
-                                    {loading ? <><Spinner animation="border" size="sm" className="me-2" /> Verifying...</> : "Verify & Activate"}
+                                <Button type="submit" className="w-100 nav-btn-modern py-2 mb-3 shadow-lg" style={{ background: 'var(--success-color)' }} disabled={loading}>
+                                    {loading ? <Spinner animation="border" size="sm" className="me-2" /> : "Verify & Initialize"}
                                 </Button>
 
-                                {/* RESEND CODE BUTTON */}
                                 <div className="text-center">
-                                    <span className="text-secondary small">Didn't receive code? </span>
+                                    <span className="text-muted smallest">No signal? </span>
                                     <Button
                                         variant="link"
                                         onClick={handleResendOtp}
                                         disabled={resendCooldown > 0 || loading}
-                                        className="p-0 fw-bold text-primary text-decoration-none small ms-1"
+                                        className="nav-link-modern smallest"
                                     >
-                                        {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : <><FaRedo className="me-1 small"/> Resend OTP</>}
+                                        {resendCooldown > 0 ? `${resendCooldown}s` : "Resend"}
                                     </Button>
                                 </div>
                             </Form>
                         )}
 
-                        {/* Login Link (Only show on Step 1) */}
+                        {/* Login Link */}
                         {step === 1 && (
-                            <div className="text-center mt-3 pt-2 border-top">
-                                <span className="text-secondary small">Already have an account? </span>
-                                <Button variant="link" onClick={() => navigate('/login')} className="p-0 fw-bold text-primary text-decoration-none small">
-                                    Login Here
+                            <div className="text-center mt-3 pt-3 border-top border-secondary border-opacity-10">
+                                <span className="text-muted smallest">Identity exists? </span>
+                                <Button variant="link" onClick={() => navigate('/login')} className="auth-text-action smallest fw-bold ms-1">
+                                    Sign In
                                 </Button>
                             </div>
                         )}

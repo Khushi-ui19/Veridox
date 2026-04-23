@@ -33,7 +33,9 @@ build/
 .mvn/
 .vscode/
 .idea/
-application.yml
+out/
+application.properties
 TODO.md
 TODO_FIXES.md
 docker-compose.yml
+.env

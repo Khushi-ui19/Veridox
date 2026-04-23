@@ -64,4 +64,12 @@ public class RateLimitingService {
         cache.remove(username);
     }
 
+    public void refundToken(String username) {
+        Bucket bucket = cache.get(username);
+        if (bucket != null) {
+            bucket.addTokens(1);
+            System.out.println("✅ Token refunded for user: " + username);
+        }
+    }
+
 }

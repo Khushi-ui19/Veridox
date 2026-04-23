@@ -11,21 +11,21 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 
 @Service
 public class PdfService {
+    @Value("${tessdata.path:./tessdata}")
+    private String tessDataPath;
+
     private ITesseract tesseract;
     // This runs ONLY when the first user uploads a file, not when the server starts.
     private ITesseract getTesseract() {
         if (tesseract == null) {
             tesseract = new Tesseract();
-
-            // Logic to find the folder
-            String projectPath = System.getProperty("user.dir");
-            String tessDataPath = projectPath + File.separator + "tessdata";
 
             System.out.println("⚠️ Initializing Tesseract (First Time Load)...");
             System.out.println("📂 TessData Path: " + tessDataPath);

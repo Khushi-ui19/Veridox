@@ -16,17 +16,45 @@ import java.util.HashMap;
 import java.util.Map;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.HttpHeaders;
-import jakarta.servlet.http.Cookie;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = {"http://localhost:5173", "https://contract-risk-analyzer-theta.vercel.app"}, allowCredentials = "true")
 public class AuthController {
 
     @Autowired
     private AuthService authService;
     @Autowired
     private com.RiskAnalyzerProject.ContractRiskAnalyzer.util.JwtUtil jwtUtil;
+
+    private boolean isSecureRequest(HttpServletRequest request) {
+        String forwardedProto = request.getHeader("X-Forwarded-Proto");
+        if (forwardedProto != null && !forwardedProto.isBlank()) {
+            return "https".equalsIgnoreCase(forwardedProto);
+        }
+
+        String origin = request.getHeader("Origin");
+        if (origin != null && !origin.isBlank()) {
+            return origin.startsWith("https://");
+        }
+
+        String referer = request.getHeader("Referer");
+        if (referer != null && !referer.isBlank()) {
+            return referer.startsWith("https://");
+        }
+
+        return request.isSecure();
+    }
+
+    private ResponseCookie buildJwtCookie(HttpServletRequest request, String token, long maxAgeSeconds) {
+        boolean secure = isSecureRequest(request);
+        return ResponseCookie.from("jwtToken", token)
+                .httpOnly(true)
+                .secure(secure)
+                .path("/")
+                .maxAge(maxAgeSeconds)
+                .sameSite(secure ? "None" : "Lax")
+                .build();
+    }
 
 
     @Valid
@@ -56,8 +84,16 @@ public class AuthController {
     @Valid
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
+            // Validate input
+            if (loginRequest.getUsername() == null || loginRequest.getUsername().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Username is required"));
+            }
+            if (loginRequest.getPassword() == null || loginRequest.getPassword().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Password is required"));
+            }
+            
             User user = new User();
-            user.setUsername(loginRequest.getUsername());
+            user.setUsername(loginRequest.getUsername().trim());
             user.setPassword(loginRequest.getPassword());
             String message = authService.loginUser(user);
             Map<String, String> response = new HashMap<>();
@@ -66,16 +102,10 @@ public class AuthController {
             return ResponseEntity.ok(response);
     }
     @PostMapping("/login/verify")
-    public ResponseEntity<?> verifyLogin(@RequestParam String username, @RequestParam String otp) {
+    public ResponseEntity<?> verifyLogin(@RequestParam String username, @RequestParam String otp, HttpServletRequest request) {
             Map<String, String> loginResult = authService.verifyLoginOtp(username, otp);
             String jwt = loginResult.get("jwt");
-            ResponseCookie jwtCookie = ResponseCookie.from("jwtToken", jwt)
-                .httpOnly(true)
-                .secure(true) // Set to true for HTTPS (Koyeb/Prod)
-                .path("/")    // Available to all endpoints
-                .maxAge(24 * 60 * 60) // Expires in 1 day
-                .sameSite("None") // Good for security
-                .build();
+            ResponseCookie jwtCookie = buildJwtCookie(request, jwt, 24 * 60 * 60);
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Login Successful");
@@ -91,13 +121,7 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<String> logoutUser(HttpServletRequest request, HttpServletResponse response) {
         authService.logOutUser(request, response);
-        ResponseCookie deleteCookie = ResponseCookie.from("jwtToken", "")
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .maxAge(0) // 0 means delete immediately
-                .sameSite("Lax")
-                .build();
+        ResponseCookie deleteCookie = buildJwtCookie(request, "", 0);
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
                 .body("Logout Successful");
@@ -136,7 +160,9 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Password reset successfully. You can now login."));
     }
     @PostMapping("/oauth-complete")
-    public ResponseEntity<?> completeOAuthRegistration(@RequestBody com.RiskAnalyzerProject.ContractRiskAnalyzer.dto.OAuth2CompleteRequest request) {
+    public ResponseEntity<?> completeOAuthRegistration(
+            @RequestBody com.RiskAnalyzerProject.ContractRiskAnalyzer.dto.OAuth2CompleteRequest request,
+            HttpServletRequest httpServletRequest) {
         // 1. Verify the temp token matches the email (Security Check)
         if (!jwtUtil.validateToken(request.getTempToken(), request.getEmail())) {
             return ResponseEntity.status(401).body(Map.of("error", "Invalid or expired registration session."));
@@ -145,14 +171,9 @@ public class AuthController {
         // 2. CHECK: If user already exists, just return the login token
         // (This handles the case where a previous attempt created the user but failed to redirect)
         if (authService.emailExists(request.getEmail())) { // You might need to add this method to AuthService or use UserRepository directly
-            String token = jwtUtil.generateToken(request.getEmail()); // Use email or fetch actual username
-            ResponseCookie existingUserCookie = ResponseCookie.from("jwtToken", token)
-                    .httpOnly(true)
-                    .secure(true) // NOTE: Change to false if testing on localhost HTTP!
-                    .path("/")
-                    .maxAge(24 * 60 * 60)
-                    .sameSite("Lax")
-                    .build();
+            User existingUser = authService.getUserByEmail(request.getEmail());
+            String token = jwtUtil.generateToken(existingUser.getUsername());
+            ResponseCookie existingUserCookie = buildJwtCookie(httpServletRequest, token, 24 * 60 * 60);
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, existingUserCookie.toString())
                     .body(Map.of("message", "Login Successful"));
@@ -176,13 +197,7 @@ public class AuthController {
         // 6. Generate Real Login Token
         String token = jwtUtil.generateToken(user.getUsername());
 
-        ResponseCookie newUserCookie = ResponseCookie.from("jwtToken", token)
-                .httpOnly(true)
-                .secure(true) // NOTE: Change to false if testing on localhost HTTP!
-                .path("/")
-                .maxAge(24 * 60 * 60)
-                .sameSite("Lax")
-                .build();
+        ResponseCookie newUserCookie = buildJwtCookie(httpServletRequest, token, 24 * 60 * 60);
 
         // 8. Attach the cookie to the response
         return ResponseEntity.ok()

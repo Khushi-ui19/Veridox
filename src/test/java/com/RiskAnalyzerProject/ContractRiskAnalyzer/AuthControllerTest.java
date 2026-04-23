@@ -155,6 +155,7 @@ public class AuthControllerTest {
 
         // 2. EXECUTE & ASSERT
         mockMvc.perform(post("/api/auth/oauth-complete")
+                        .header("X-Forwarded-Proto", "https")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestPayload))
 

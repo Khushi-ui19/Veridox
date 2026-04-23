@@ -8,11 +8,9 @@ import com.RiskAnalyzerProject.ContractRiskAnalyzer.repository.UserRepository;
 import com.RiskAnalyzerProject.ContractRiskAnalyzer.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
-import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,7 +18,9 @@ import org.springframework.security.web.authentication.logout.SecurityContextLog
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,9 +32,6 @@ public class AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -59,19 +56,24 @@ public class AuthService {
     private final Map<String, User> pendingRegistrations = new ConcurrentHashMap<>();
 
     public boolean emailExists(String email) {
-        return userRepository.existsByEmail(email.trim());
+        return userRepository.existsByEmailIgnoreCase(normalizeEmail(email));
+    }
+
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmailIgnoreCase(normalizeEmail(email))
+                .orElseThrow(() -> new ResourceNotFound("User not found"));
     }
 
     // STEP 1: Register (Save to RAM only)
     public String registerUser(User user) {
         if (user.getUsername() != null) user.setUsername(user.getUsername().trim());
-        if (user.getEmail() != null) user.setEmail(user.getEmail().trim());
+        if (user.getEmail() != null) user.setEmail(normalizeEmail(user.getEmail()));
         if (user.getPassword() != null) user.setPassword(passwordEncoder.encode(user.getPassword().trim()));
         // 1. Check DB for existing users (Real MongoDB check)
-        if (userRepository.existsByEmail(user.getEmail())) {
+        if (userRepository.existsByEmailIgnoreCase(user.getEmail())) {
             throw new AppException("Error: Email is already in use!");
         }
-        if (userRepository.existsByUsername(user.getUsername())) {
+        if (userRepository.existsByUsernameIgnoreCase(user.getUsername())) {
             throw new AppException("Error: Username is already taken!");
         }
 
@@ -103,11 +105,12 @@ public class AuthService {
 
     // STEP 2: Verify OTP (Move from RAM -> MongoDB)
     public void verifyRegistration(String email, String otp) {
+        String normalizedEmail = normalizeEmail(email);
         // 1. Look in RAM
-        User pendingUser = pendingRegistrations.get(email.trim());
+        User pendingUser = pendingRegistrations.get(normalizedEmail);
         if (pendingUser == null) {
             // If not in RAM, maybe they verified already?
-            if (userRepository.existsByEmail(email.trim())) {
+            if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
                 throw new AppException("User already registered. Please Login.");
             }
             throw new ResourceNotFound("Session expired or invalid email. Please register again.");
@@ -115,7 +118,7 @@ public class AuthService {
 
         // 2. Validate OTP
         if (pendingUser.getOtpExpiryTime().isBefore(LocalDateTime.now())) {
-            pendingRegistrations.remove(email.trim());
+            pendingRegistrations.remove(normalizedEmail);
             throw new AppException("OTP has expired. Please register again.");
         }
 
@@ -130,15 +133,16 @@ public class AuthService {
         userRepository.save(pendingUser); // <--- SAVED TO DB NOW
 
         // 4. Remove from RAM
-        pendingRegistrations.remove(email.trim());
+        pendingRegistrations.remove(normalizedEmail);
     }
 
     // STEP 3: Resend OTP (Update RAM)
     public void resendRegistrationOtp(String email) {
-        User pendingUser = pendingRegistrations.get(email);
+        String normalizedEmail = normalizeEmail(email);
+        User pendingUser = pendingRegistrations.get(normalizedEmail);
 
         if (pendingUser == null) {
-            if (userRepository.existsByEmail(email)) {
+            if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
                 throw new AppException("User already registered. Please Login.");
             }
             throw new ResourceNotFound("Session expired. Please register again.");
@@ -156,13 +160,16 @@ public class AuthService {
         }
 
         // Update RAM
-        pendingRegistrations.put(email, pendingUser);
+        pendingRegistrations.put(normalizedEmail, pendingUser);
     }
     public void registerOAuthUser(User user) {
-        if (userRepository.existsByEmail(user.getEmail())) {
+        if (user.getUsername() != null) user.setUsername(user.getUsername().trim());
+        if (user.getEmail() != null) user.setEmail(normalizeEmail(user.getEmail()));
+
+        if (userRepository.existsByEmailIgnoreCase(user.getEmail())) {
             throw new AppException("Error: Email is already in use!");
         }
-        if (userRepository.existsByUsername(user.getUsername())) {
+        if (userRepository.existsByUsernameIgnoreCase(user.getUsername())) {
             throw new AppException("Error: Username is already taken!");
         }
 
@@ -174,24 +181,85 @@ public class AuthService {
 
         userRepository.save(user); // Save directly to DB, skipping OTP/RAM map
     }
+
+    private String normalizeCredential(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private String normalizeEmail(String value) {
+        return normalizeCredential(value).toLowerCase(Locale.ROOT);
+    }
+
+    private Optional<User> findUserByLoginIdentifierOptional(String loginIdentifier) {
+        String normalizedIdentifier = normalizeCredential(loginIdentifier);
+        if (normalizedIdentifier.isEmpty()) {
+            return Optional.empty();
+        }
+
+        if (normalizedIdentifier.contains("@")) {
+            String normalizedEmail = normalizeEmail(normalizedIdentifier);
+            return userRepository.findByEmailIgnoreCase(normalizedEmail)
+                    .or(() -> userRepository.findByUsernameIgnoreCase(normalizedIdentifier));
+        }
+
+        return userRepository.findByUsernameIgnoreCase(normalizedIdentifier)
+                .or(() -> userRepository.findByEmailIgnoreCase(normalizedIdentifier));
+    }
+
+    private User findUserByLoginIdentifier(String loginIdentifier) {
+        return findUserByLoginIdentifierOptional(loginIdentifier)
+                .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
+    }
+
+    private void verifyPasswordOrUpgradeLegacyHash(User user, String rawPassword) {
+        String exactPassword = rawPassword == null ? "" : rawPassword;
+        String trimmedPassword = exactPassword.trim();
+        String storedPassword = user.getPassword();
+
+        if (storedPassword == null || storedPassword.isBlank()) {
+            throw new BadCredentialsException("Invalid username or password");
+        }
+
+        if (passwordEncoder.matches(exactPassword, storedPassword)) {
+            return;
+        }
+
+        if (!trimmedPassword.equals(exactPassword) && passwordEncoder.matches(trimmedPassword, storedPassword)) {
+            return;
+        }
+
+        // Support older accounts created before password hashing was enforced.
+        if (exactPassword.equals(storedPassword)) {
+            user.setPassword(passwordEncoder.encode(exactPassword));
+            userRepository.save(user);
+            return;
+        }
+
+        if (!trimmedPassword.equals(exactPassword) && trimmedPassword.equals(storedPassword)) {
+            user.setPassword(passwordEncoder.encode(trimmedPassword));
+            userRepository.save(user);
+            return;
+        }
+
+        throw new BadCredentialsException("Invalid username or password");
+    }
+
+    private void ensurePersistedUserVerified(User user) {
+        if (user.isVerified()) {
+            return;
+        }
+
+        // Compatibility path for legacy database records created before the verified
+        // flag was stored reliably. Current registrations are only persisted after OTP
+        // verification, so an existing DB user should be considered verified.
+        user.setVerified(true);
+        userRepository.save(user);
+    }
+
     public String loginUser(User loginRequest) {
-        if (!userRepository.existsByUsername(loginRequest.getUsername().trim())) {
-            throw new BadCredentialsException("Invalid username or password");
-        }
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getUsername().trim(), loginRequest.getPassword().trim())
-            );
-        } catch (Exception e) {
-            throw new BadCredentialsException("Invalid username or password");
-        }
-
-        User user = userRepository.findByUsername(loginRequest.getUsername().trim())
-                .orElseThrow(() -> new ResourceNotFound("User not found"));
-
-        if (!user.isVerified()) {
-            throw new AppException("Account not verified.");
-        }
+        User user = findUserByLoginIdentifier(loginRequest.getUsername());
+        verifyPasswordOrUpgradeLegacyHash(user, loginRequest.getPassword());
+        ensurePersistedUserVerified(user);
 
         String otp = String.valueOf(new Random().nextInt(900000) + 100000);
         user.setOtp(otp);
@@ -203,8 +271,11 @@ public class AuthService {
     }
 
     public Map<String, String> verifyLoginOtp(String username, String otp) {
-        User user = userRepository.findByUsername(username.trim())
-                .orElseThrow(() -> new ResourceNotFound("User not found"));
+        User user = findUserByLoginIdentifier(username);
+
+        if (user.getOtp() == null || user.getOtpExpiryTime() == null) {
+            throw new AppException("No active OTP request. Please login again.");
+        }
 
         if (user.getOtpExpiryTime().isBefore(LocalDateTime.now())) {
             throw new AppException("OTP has expired.");
@@ -214,10 +285,11 @@ public class AuthService {
         }
 
         user.setOtp(null);
+        user.setOtpExpiryTime(null);
         userRepository.save(user);
 
         Map<String, String> result = new ConcurrentHashMap<>();
-        result.put("jwt", jwtUtil.generateToken(username.trim()));
+        result.put("jwt", jwtUtil.generateToken(user.getUsername()));
         result.put("username", user.getUsername());
         result.put("email", user.getEmail());
         result.put("role", user.getRole());
@@ -239,11 +311,12 @@ public class AuthService {
     }
 
     public User getUserProfile(String username) {
-        return userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFound("User not found"));
+        return userRepository.findByUsernameIgnoreCase(normalizeCredential(username))
+                .orElseThrow(() -> new ResourceNotFound("User not found"));
     }
 
     public void initiatePasswordReset(String email) {
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFound("User not found"));
+        User user = getUserByEmail(email);
         String otp = String.valueOf(new Random().nextInt(900000) + 100000);
         user.setOtp(otp);
         user.setOtpExpiryTime(LocalDateTime.now().plusMinutes(1));
@@ -252,14 +325,13 @@ public class AuthService {
     }
 
     public void verifyOtp(String email, String otp) {
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFound("User not found"));
+        User user = getUserByEmail(email);
         if (user.getOtpExpiryTime().isBefore(LocalDateTime.now())) throw new AppException("OTP expired");
         if (!user.getOtp().equals(otp)) throw new BadCredentialsException("Invalid OTP");
     }
 
     public void resetPassword(String email, String otp, String newPassword) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFound("User not found with email: " + email));
+        User user = getUserByEmail(email);
 
         if (user.getOtp() == null || user.getOtpExpiryTime() == null) {
             throw new AppException("Invalid request. Please request a new OTP.");
@@ -280,7 +352,7 @@ public class AuthService {
     }
 
     public void deleteUserAccount(String username, String password) {
-        User user = userRepository.findByUsername(username)
+        User user = userRepository.findByUsernameIgnoreCase(normalizeCredential(username))
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
@@ -301,9 +373,9 @@ public class AuthService {
         rateLimitingService.clearUserRateLimit(username);
 
         // 4) Remove any pending registration cache entries tied to this user/email
-        pendingRegistrations.remove(user.getEmail());
+        pendingRegistrations.remove(normalizeEmail(user.getEmail()));
         pendingRegistrations.entrySet().removeIf(entry ->
-                entry.getValue() != null && username.equals(entry.getValue().getUsername()));
+                entry.getValue() != null && username.equalsIgnoreCase(entry.getValue().getUsername()));
 
         // 5) Finally delete user account
         userRepository.delete(user);

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import api from '../api/axiosConfig';
+import api, { getBackendOrigin } from '../api/axiosConfig';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Container, Card, Form, Button, Spinner, InputGroup } from 'react-bootstrap';
+import { Container, Card, Form, Button, Spinner, InputGroup, Badge } from 'react-bootstrap';
 import { cacheUser, clearCachedUser } from '../utils/authUserCache';
 import {
     FaShieldAlt,
@@ -15,13 +15,6 @@ import {
     FaRedo,
     FaGoogle
 } from 'react-icons/fa';
-
-// --- THEME PANEL STYLE ---
-const glassStyle = {
-    background: 'var(--glass-surface)',
-    border: '1px solid var(--glass-border)',
-    boxShadow: 'var(--glass-shadow)'
-};
 
 const Login = () => {
     const [step, setStep] = useState(1);
@@ -87,11 +80,12 @@ const Login = () => {
             setCanResend(false);
             toast.success("OTP sent to your email!");
         } catch (err) {
+           const errorMessage = err.response?.data?.message || err.response?.data?.error;
            if (err.response && err.response.status === 404) {
                toast.error("Account does not exist. Redirecting to Register...");
                setTimeout(() => navigate('/register'), 2000);
            } else {
-               toast.error("Login failed. Check username/password.");
+               toast.error(errorMessage || "Login failed. Check your username/email and password.");
            }
         } finally {
             setLoading(false);
@@ -100,8 +94,7 @@ const Login = () => {
 
    const handleGoogleLogin = () => {
         document.cookie = "auth_intent=login; path=/; max-age=300";
-       const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-       window.location.href = `${baseUrl}/oauth2/authorization/google`;
+       window.location.href = `${getBackendOrigin()}/oauth2/authorization/google`;
     };
 
     const handleResendOtp = async () => {
@@ -113,7 +106,7 @@ const Login = () => {
             setCanResend(false);
             setOtp('');
         } catch (err) {
-            toast.error("Failed to resend OTP.");
+            toast.error(err.response?.data?.message || "Failed to resend OTP.");
         } finally {
             setLoading(false);
         }
@@ -122,7 +115,9 @@ const Login = () => {
     const handleVerify = async (e) => {
         e.preventDefault();
         try {
-            const response = await api.post(`/auth/login/verify?username=${username}&otp=${otp}`);
+            const response = await api.post('/auth/login/verify', null, {
+                params: { username, otp }
+            });
 
             localStorage.setItem('lastActive', Date.now().toString());
             if (response?.data?.user) {
@@ -131,123 +126,124 @@ const Login = () => {
             toast.success("Login Successful!");
             navigate('/dashboard');
         } catch (err) {
-            toast.error("Invalid OTP");
+            toast.error(err.response?.data?.message || "Invalid OTP");
         }
     };
 
     return (
-        <div className="d-flex justify-content-center align-items-center min-vh-100 fade-in app-theme-page" style={{ overflowX: 'hidden' }}>
+        <div className="d-flex justify-content-center align-items-center min-vh-100 app-theme-page" style={{ overflowX: 'hidden' }}>
 
             {/* Background Blobs */}
-            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
-            <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>
+            <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left" style={{ opacity: 0.3 }}></div>
+            <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right" style={{ opacity: 0.2 }}></div>
 
-            <Container className="app-page-content" style={{ maxWidth: '420px' }}> {/* Reduced maxWidth for a slimmer look */}
-                <Card className="border-0 shadow-lg" style={glassStyle}>
-                    <Card.Body className="p-4"> {/* Reduced Padding (p-5 -> p-4) */}
-                        <div className="text-start mb-2"> {/* Reduced Margin */}
-                            <Button variant="link" onClick={() => navigate('/')} className="p-0 text-decoration-none text-secondary fw-bold small">
-                                <FaArrowLeft className="me-2" /> Back
+            <Container className="app-page-content animate-entrance" style={{ maxWidth: '420px' }}>
+                <Card className="border-0 glass-3d-deep shadow-2xl" style={{ borderRadius: '28px', background: 'rgba(255, 255, 255, 0.7)' }}>
+                    <Card.Body className="p-3 p-md-4">
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                            <Button variant="link" onClick={() => navigate('/')} className="nav-link-modern p-0 small d-flex align-items-center">
+                                <FaArrowLeft className="me-1" /> Back
                             </Button>
+                            <Badge bg="primary" className="rounded-pill px-3 smallest opacity-75">v2.0 SECURE</Badge>
                         </div>
 
-                        <div className="text-center mb-3"> {/* Reduced Margin (mb-5 -> mb-3) */}
-                            <div className="bg-white p-2 rounded-circle shadow-sm d-inline-block mb-2 text-primary">
-                                <FaShieldAlt size={28} />
+                        <div className="text-center mb-3">
+                            <div className="p-2 rounded-circle glass-3d d-inline-block mb-2 text-primary animate-float-slow" style={{ background: 'white' }}>
+                                <FaShieldAlt size={24} />
                             </div>
-                            <h4 className="fw-bold text-dark mb-0">Welcome Back</h4>
+                            <h3 className="fw-bold text-dark mb-1">Vault Access</h3>
+                            <p className="text-muted smallest m-0">Secure semantic login</p>
                         </div>
 
                         {step === 1 ? (
                             <Form onSubmit={handleLogin}>
-                                <Form.Group className="mb-3"> {/* Reduced Margin (mb-4 -> mb-3) */}
-                                    <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-1">Username</Form.Label>
-                                    <InputGroup>
-                                        <InputGroup.Text className="bg-white border-end-0"><FaUser className="text-primary" /></InputGroup.Text>
+                                <Form.Group className="mb-2">
+                                    <Form.Label className="fw-bold text-secondary smallest text-uppercase ls-1 mb-1 ms-1">Neural ID</Form.Label>
+                                    <InputGroup className="glass-3d-inset rounded-3 overflow-hidden border-0 bg-white">
+                                        <InputGroup.Text className="bg-transparent border-0 ps-3 py-2"><FaUser size={14} className="text-primary" /></InputGroup.Text>
                                         <Form.Control
                                             type="text"
-                                            placeholder="Username"
+                                            placeholder="Username or email"
                                             value={username}
                                             onChange={(e) => setUsername(e.target.value)}
                                             required
-                                            className="form-control border-start-0 ps-0 shadow-none"
+                                            className="bg-transparent border-0 py-2 shadow-none text-dark small"
                                         />
                                     </InputGroup>
                                 </Form.Group>
 
-                                <Form.Group className="mb-3"> {/* Reduced Margin (mb-4 -> mb-3) */}
-                                    <div className="d-flex justify-content-between align-items-center mb-1">
-                                        <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-0">Password</Form.Label>
-                                        <Button variant="link" className="p-0 text-decoration-none small fw-bold" onClick={() => navigate('/forgot-password')}>
-                                            Forgot?
+                                <Form.Group className="mb-3">
+                                    <div className="d-flex justify-content-between align-items-center mb-1 ms-1">
+                                        <Form.Label className="fw-bold text-secondary smallest text-uppercase ls-1 mb-0">Encryption Key</Form.Label>
+                                        <Button variant="link" className="auth-text-action smallest fw-bold" onClick={() => navigate('/forgot-password')}>
+                                            Recover?
                                         </Button>
                                     </div>
-                                    <InputGroup>
-                                        <InputGroup.Text className="bg-white border-end-0"><FaLock className="text-primary" /></InputGroup.Text>
+                                    <InputGroup className="glass-3d-inset rounded-3 overflow-hidden border-0 bg-white">
+                                        <InputGroup.Text className="bg-transparent border-0 ps-3 py-2"><FaLock size={14} className="text-primary" /></InputGroup.Text>
                                         <Form.Control
                                             type={showPassword ? "text" : "password"}
                                             placeholder="Password"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             required
-                                            className="form-control border-start-0 border-end-0 ps-0 shadow-none"
+                                            className="bg-transparent border-0 py-2 shadow-none text-dark small"
                                         />
-                                        <Button variant="outline-secondary" className="border-start-0 bg-white text-secondary" onClick={() => setShowPassword(!showPassword)}>
-                                            {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                        <Button variant="link" className="bg-transparent border-0 text-muted pe-3 py-2" onClick={() => setShowPassword(!showPassword)}>
+                                            {showPassword ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
                                         </Button>
                                     </InputGroup>
                                 </Form.Group>
 
-                                <Button variant="primary" type="submit" className="w-100 btn fw-bold mb-3 shadow-sm rounded-pill py-2" disabled={loading}>
-                                    {loading ? <><Spinner animation="border" size="sm" className="me-2" /> Sending...</> : <><FaLock className="me-2" /> Login</>}
+                                <Button type="submit" className="w-100 nav-btn-modern py-2 mb-3 d-flex align-items-center justify-content-center" disabled={loading}>
+                                    {loading ? <Spinner animation="border" size="sm" className="me-2" /> : <><FaLock className="me-2" /> Unlock Account</>}
                                 </Button>
 
-                                <div className="d-flex align-items-center my-3"> {/* Reduced Margin (my-4 -> my-3) */}
-                                    <hr className="flex-grow-1 opacity-25" />
-                                    <span className="px-3 text-secondary small fw-bold">OR</span>
-                                    <hr className="flex-grow-1 opacity-25" />
+                                <div className="d-flex align-items-center mb-3">
+                                    <hr className="flex-grow-1 opacity-10" />
+                                    <span className="px-2 text-muted smallest fw-bold ls-1">OR</span>
+                                    <hr className="flex-grow-1 opacity-10" />
                                 </div>
 
-                                <Button variant="white" className="w-100 fw-bold border shadow-sm d-flex align-items-center justify-content-center py-2 rounded-pill bg-white text-dark hover-lift" onClick={handleGoogleLogin}>
+                                <Button variant="white" className="w-100 fw-bold glass-3d d-flex align-items-center justify-content-center py-2 rounded-3 text-dark border-0 shadow-sm hover-lift small" onClick={handleGoogleLogin}>
                                     <FaGoogle className="me-2 text-danger" /> Google
                                 </Button>
                             </Form>
                         ) : (
                             <Form onSubmit={handleVerify}>
-                                <div className="alert alert-success py-2 text-center mb-3 border-0 shadow-sm rounded bg-success-subtle text-success fw-bold small">
-                                    <FaCheckCircle className="me-2" /> Code Sent
+                                <div className="glass-3d-inset p-2 text-center mb-3 border-0 text-success fw-bold smallest rounded-3" style={{ background: 'rgba(16, 185, 129, 0.1)' }}>
+                                    <FaCheckCircle className="me-1" /> Secure code dispatched.
                                 </div>
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold text-secondary small text-uppercase text-center w-100 d-block mb-2">Enter OTP</Form.Label>
                                     <Form.Control
                                         type="text"
                                         placeholder="000000"
                                         value={otp}
                                         onChange={(e) => setOtp(e.target.value)}
                                         required
-                                        className="form-control text-center fs-4 fw-bold letter-spacing-2 shadow-none border-primary"
+                                        className="form-control glass-3d-inset text-center fs-3 fw-bold border-0 rounded-3 py-2 bg-white"
                                         maxLength="6"
-                                        style={{ letterSpacing: '6px' }}
+                                        style={{ letterSpacing: '10px', color: 'var(--primary-color)' }}
                                     />
                                 </Form.Group>
 
                                 <div className="d-flex justify-content-center mb-3">
-                                    <Button variant="link" onClick={handleResendOtp} disabled={!canResend || loading} className="p-0 text-decoration-none small fw-bold text-secondary">
-                                        {canResend ? <span className="text-primary"><FaRedo className="me-1" /> Resend</span> : <span>Resend in {formatTime(timer)}</span>}
+                                    <Button variant="link" onClick={handleResendOtp} disabled={!canResend || loading} className="nav-link-modern smallest">
+                                        {canResend ? <span>Request Code</span> : <span>Resend: {formatTime(timer)}</span>}
                                     </Button>
                                 </div>
 
-                                <Button variant="success" type="submit" className="w-100 btn fw-bold rounded-pill shadow-sm py-2">
-                                    Verify
+                                <Button type="submit" className="w-100 nav-btn-modern py-2 shadow-lg" style={{ background: 'var(--success-color)' }}>
+                                    Verify & Proceed
                                 </Button>
                             </Form>
                         )}
 
                         {step === 1 && (
-                            <div className="text-center mt-3 pt-2 border-top">
-                                <span className="text-secondary small">New here? </span>
-                                <Button variant="link" onClick={() => navigate('/register')} className="p-0 fw-bold text-primary text-decoration-none small">
-                                    Create Account
+                            <div className="text-center mt-3 pt-3 border-top border-secondary border-opacity-10">
+                                <span className="text-muted smallest">Unregistered? </span>
+                                <Button variant="link" onClick={() => navigate('/register')} className="auth-text-action smallest fw-bold ms-1">
+                                    Initialize Identity
                                 </Button>
                             </div>
                         )}

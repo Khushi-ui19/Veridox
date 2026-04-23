@@ -3,7 +3,6 @@ package com.RiskAnalyzerProject.ContractRiskAnalyzer.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -44,6 +43,7 @@ public class SecurityConfiguration {
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/oauth2-login") // Prevent Spring's default login page from overriding React's /login route
                         .successHandler(oAuth2LoginSuccessHandler)
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -53,17 +53,17 @@ public class SecurityConfiguration {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Allow both Dev (5173) and Prod (8080) origins
+        // Accept localhost/Vercel/Koyeb origins while keeping credentialed requests enabled.
         configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:5173",
-                "http://localhost:8080",
+                "http://localhost:*",
+                "http://127.0.0.1:*",
                 "https://contract-risk-analyzer-theta.vercel.app",
-               // "https://intellectual-wilona-animeshj425-62b84662.koyeb.app", // <--- Add your actual Domain
-                "http://192.168.*.*",      // Allow Mobile on Local Wi-Fi (Optional)
+                "http://192.168.*.*:*",
                 "https://*.koyeb.app"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Set-Cookie", "Authorization", "Content-Disposition"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -72,8 +72,11 @@ public class SecurityConfiguration {
     }
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-        // Tells Spring Security to completely ignore these paths
+        // Tells Spring Security to completely ignore these paths (static files + SPA routes)
         return (web) -> web.ignoring()
-                .requestMatchers("/assets/**", "/favicon.ico", "/index.html", "/", "/static/**", "/*.js", "/*.css");
+                .requestMatchers("/assets/**", "/favicon.ico", "/favicon.svg", "/index.html", "/", "/static/**", "/*.js", "/*.css")
+                // SPA client-side routes — bypass security so SpaForwardingController serves index.html
+                .requestMatchers("/login", "/register", "/dashboard", "/forgot-password",
+                        "/complete-registration", "/settings", "/chat/**", "/contracts/**");
     }
 }

@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import { toast } from 'react-toastify';
 import { Container, Card, Form, Button, InputGroup, Spinner } from 'react-bootstrap';
+import { cacheUser } from '../utils/authUserCache';
 import {
     FaUserCheck,
     FaUser,
@@ -14,13 +15,6 @@ import {
     FaMagic,
     FaArrowLeft
 } from 'react-icons/fa';
-
-// --- THEME PANEL STYLE ---
-const glassStyle = {
-    background: 'var(--glass-surface)',
-    border: '1px solid var(--glass-border)',
-    boxShadow: 'var(--glass-shadow)'
-};
 
 const CompleteRegistration = () => {
     const [searchParams] = useSearchParams();
@@ -64,19 +58,24 @@ const CompleteRegistration = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            const response = await api.post('/auth/oauth-complete', {
+            await api.post('/auth/oauth-complete', {
                 email,
                 username,
                 password,
                 tempToken
             });
 
-            localStorage.setItem('jwtToken', response.data.token);
             localStorage.setItem('lastActive', Date.now().toString());
-            toast.success("Registration Complete! Welcome.");
+            try {
+                const profileRes = await api.get('/auth/profile');
+                cacheUser(profileRes.data);
+            } catch {
+                // PrivateRoute re-check
+            }
+            toast.success("Identity Verified! Welcome.");
             navigate('/dashboard');
         } catch (error) {
-            const msg = error.response?.data?.message || "Registration failed.";
+            const msg = error.response?.data?.message || "Verification failed.";
             toast.error(msg);
         } finally {
             setLoading(false);
@@ -84,90 +83,89 @@ const CompleteRegistration = () => {
     };
 
     return (
-        <div className="d-flex justify-content-center align-items-center min-vh-100 fade-in app-theme-page" style={{ overflowX: 'hidden' }}>
+        <div className="d-flex justify-content-center align-items-center min-vh-100 fade-in app-theme-page animate-3d-appear" style={{ overflowX: 'hidden' }}>
 
             <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
             <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>
 
-            <Container className="app-page-content" style={{ maxWidth: '450px' }}>
-                <Card className="border-0 shadow-lg" style={glassStyle}>
+            <Container className="app-page-content" style={{ maxWidth: '440px' }}>
+                <Card className="border-0 glass-3d" style={{ borderRadius: '24px' }}>
                     <Card.Body className="p-4">
 
-                        <div className="text-start mb-2">
-                            <Button variant="link" onClick={() => navigate('/login')} className="p-0 text-decoration-none text-secondary fw-bold small">
-                                <FaArrowLeft className="me-2" /> Back to Login
+                        <div className="text-start mb-3">
+                            <Button variant="link" onClick={() => navigate('/login')} className="p-0 text-decoration-none text-secondary fw-bold small glass-3d px-3 py-1 rounded-pill">
+                                <FaArrowLeft className="me-2" /> Login
                             </Button>
                         </div>
 
                         <div className="text-center mb-4">
-                            <div className="bg-white p-2 rounded-circle shadow-sm d-inline-block mb-3 text-success">
+                            <div className="p-2 rounded-circle glass-3d d-inline-block mb-2 text-success pulse">
                                 <FaUserCheck size={28} />
                             </div>
-                            <h4 className="fw-bold text-dark mb-1">Final Step</h4>
-                            <p className="text-secondary small">Complete your Google registration</p>
+                            <h3 className="fw-bold text-dark mb-0">Final Step</h3>
+                            <p className="text-muted small mt-1 mb-0">Establish your secure profile</p>
                         </div>
 
                         <Form onSubmit={handleSubmit}>
                             <Form.Group className="mb-3">
-                                <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-1">Email</Form.Label>
-                                <InputGroup>
-                                    <InputGroup.Text className="bg-light border-end-0"><FaEnvelope className="text-secondary" /></InputGroup.Text>
+                                <Form.Label className="fw-bold text-secondary small text-uppercase ls-1 mb-1 ms-2">Linked Email</Form.Label>
+                                <InputGroup className="glass-3d-inset rounded-4 overflow-hidden border-0 bg-soft opacity-75">
+                                    <InputGroup.Text className="bg-transparent border-0 ps-3"><FaEnvelope className="text-secondary" /></InputGroup.Text>
                                     <Form.Control
                                         type="email"
                                         value={email}
                                         disabled
-                                        className="form-control bg-light border-start-0 ps-0 shadow-none text-secondary"
+                                        className="bg-transparent border-0 py-2 shadow-none text-secondary fw-bold"
                                     />
-                                    <InputGroup.Text className="bg-light border-start-0 text-success"><FaCheckCircle /></InputGroup.Text>
+                                    <InputGroup.Text className="bg-transparent border-0 pe-3 text-success"><FaCheckCircle /></InputGroup.Text>
                                 </InputGroup>
                             </Form.Group>
 
                             <Form.Group className="mb-3">
-                                <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-1">Username</Form.Label>
-                                <InputGroup>
-                                    <InputGroup.Text className="bg-white border-end-0"><FaUser className="text-primary" /></InputGroup.Text>
+                                <Form.Label className="fw-bold text-secondary small text-uppercase ls-1 mb-1 ms-2">Choose Username</Form.Label>
+                                <InputGroup className="glass-3d-inset rounded-4 overflow-hidden border-0">
+                                    <InputGroup.Text className="bg-transparent border-0 ps-3"><FaUser className="text-primary" /></InputGroup.Text>
                                     <Form.Control
                                         type="text"
-                                        placeholder="Choose a username"
+                                        placeholder="Pick a handle"
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value)}
                                         required
-                                        className="form-control border-start-0 ps-0 shadow-none"
+                                        className="bg-transparent border-0 py-2 shadow-none text-dark"
                                     />
                                 </InputGroup>
                             </Form.Group>
 
                             <Form.Group className="mb-4">
-                                <div className="d-flex justify-content-between align-items-center mb-1">
-                                    <Form.Label className="fw-semibold text-secondary small text-uppercase ls-1 mb-0">Set Password</Form.Label>
+                                <div className="d-flex justify-content-between align-items-center mb-1 ms-2">
+                                    <Form.Label className="fw-bold text-secondary small text-uppercase ls-1 mb-0">Secure Password</Form.Label>
                                     <Button variant="link" onClick={generatePassword} className="p-0 text-decoration-none small fw-bold text-primary">
                                         <FaMagic className="me-1" /> Auto-Generate
                                     </Button>
                                 </div>
-                                <InputGroup>
-                                    <InputGroup.Text className="bg-white border-end-0"><FaLock className="text-primary" /></InputGroup.Text>
+                                <InputGroup className="glass-3d-inset rounded-4 overflow-hidden border-0">
+                                    <InputGroup.Text className="bg-transparent border-0 ps-3"><FaLock className="text-primary" /></InputGroup.Text>
                                     <Form.Control
                                         type={showPassword ? "text" : "password"}
-                                        placeholder="Create a password"
+                                        placeholder="Create password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         required
-                                        className="form-control border-start-0 border-end-0 ps-0 shadow-none"
+                                        className="bg-transparent border-0 py-2 shadow-none text-dark"
                                     />
-                                    <Button variant="outline-secondary" className="border-start-0 bg-white text-secondary" onClick={() => setShowPassword(!showPassword)}>
+                                    <Button variant="link" className="bg-transparent border-0 text-muted pe-3" onClick={() => setShowPassword(!showPassword)}>
                                         {showPassword ? <FaEyeSlash /> : <FaEye />}
                                     </Button>
                                 </InputGroup>
                             </Form.Group>
 
-                            {/* --- FIX IS HERE: Wrapped content in fragments/spans --- */}
-                            <Button variant="success" type="submit" className="w-100 btn fw-bold mb-3 shadow-sm rounded-pill py-2" disabled={loading}>
+                            <Button variant="success" type="submit" className="w-100 btn-success glass-3d fw-bold mb-3 rounded-pill py-2 shadow-sm" disabled={loading}>
                                 {loading ? (
                                     <>
-                                        <Spinner animation="border" size="sm" className="me-2" /> Saving...
+                                        <Spinner animation="border" size="sm" className="me-2" /> Syncing...
                                     </>
                                 ) : (
-                                    "Complete Registration"
+                                    "Establish Profile"
                                 )}
                             </Button>
                         </Form>

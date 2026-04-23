@@ -18,7 +18,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/contracts")
-@CrossOrigin(origins = {"http://localhost:5173", "https://contract-risk-analyzer-theta.vercel.app"}, allowCredentials = "true")
 public class AnalyzerController {
 
     @Autowired
@@ -89,6 +88,9 @@ public class AnalyzerController {
     }
     @PostMapping("/chat")
     public ResponseEntity<Map<String, String>> chatWithAI(@RequestBody ChatRequest request , Principal principal) {
+            if (request.getQuestion() == null || request.getQuestion().isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("response", "Question cannot be empty"));
+            }
             // Call the single unified method
             String conversationId = request.getConversationId();
             if (conversationId == null || conversationId.isEmpty()) {

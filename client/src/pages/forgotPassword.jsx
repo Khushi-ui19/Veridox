@@ -14,13 +14,6 @@ import {
     FaRedo
 } from 'react-icons/fa';
 
-// --- THEME PANEL STYLE ---
-const glassStyle = {
-    background: 'var(--glass-surface)',
-    border: '1px solid var(--glass-border)',
-    boxShadow: 'var(--glass-shadow)'
-};
-
 const ForgotPassword = () => {
     const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: New Password
     const [email, setEmail] = useState('');
@@ -104,34 +97,34 @@ const ForgotPassword = () => {
     };
 
     return (
-        <div className="d-flex justify-content-center align-items-center min-vh-100 fade-in app-theme-page" style={{ overflowX: 'hidden' }}>
+        <div className="d-flex justify-content-center align-items-center min-vh-100 fade-in app-theme-page animate-3d-appear" style={{ overflowX: 'hidden' }}>
 
             {/* Background Blobs */}
             <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
             <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right"></div>
 
             <Container className="app-page-content" style={{ maxWidth: '420px' }}>
-                <Card className="border-0 shadow-lg" style={glassStyle}>
+                <Card className="border-0 glass-3d" style={{ borderRadius: '24px' }}>
                     <Card.Body className="p-4">
-                        <div className="text-start mb-2">
-                            <Button variant="link" onClick={() => navigate('/login')} className="p-0 text-decoration-none text-muted fw-bold small">
-                                <FaArrowLeft className="me-2" /> Back to Login
+                        <div className="text-start mb-3">
+                            <Button variant="link" onClick={() => navigate('/login')} className="p-0 text-decoration-none text-secondary fw-bold small glass-3d px-3 py-1 rounded-pill">
+                                <FaArrowLeft className="me-2" /> Login
                             </Button>
                         </div>
 
                         <div className="text-center mb-4">
-                            <div className="bg-white p-2 rounded-circle shadow-sm d-inline-block mb-2 text-warning">
+                            <div className="p-2 rounded-circle glass-3d d-inline-block mb-2 text-warning pulse">
                                 {step === 3 ? <FaCheckCircle size={28} className="text-success" /> : <FaKey size={28} />}
                             </div>
-                            <h4 className="fw-bold text-dark mb-1">
-                                {step === 1 && "Forgot Password?"}
+                            <h3 className="fw-bold text-dark mb-1">
+                                {step === 1 && "Security Key"}
                                 {step === 2 && "Verify OTP"}
-                                {step === 3 && "Reset Password"}
-                            </h4>
+                                {step === 3 && "New Identity"}
+                            </h3>
                             <p className="text-muted small mb-0">
-                                {step === 1 && "Enter your email to receive a code"}
-                                {step === 2 && `Code sent to ${email}`}
-                                {step === 3 && "Create a new strong password"}
+                                {step === 1 && "Access recovery for your vault"}
+                                {step === 2 && `Secure code sent to email`}
+                                {step === 3 && "Forge a new secure password"}
                             </p>
                         </div>
 
@@ -139,21 +132,21 @@ const ForgotPassword = () => {
                         {step === 1 && (
                             <Form onSubmit={handleSendOtp}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold text-muted small text-uppercase ls-1 mb-1">Email Address</Form.Label>
-                                    <InputGroup>
-                                        <InputGroup.Text className="bg-white border-end-0"><FaEnvelope className="text-primary opacity-50" /></InputGroup.Text>
+                                    <Form.Label className="fw-bold text-secondary small text-uppercase ls-1 mb-1 ms-2">Email Address</Form.Label>
+                                    <InputGroup className="glass-3d-inset rounded-4 overflow-hidden border-0">
+                                        <InputGroup.Text className="bg-transparent border-0 ps-3"><FaEnvelope className="text-primary opacity-50" /></InputGroup.Text>
                                         <Form.Control
                                             type="email"
-                                            placeholder="name@example.com"
+                                            placeholder="Enter your email"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             required
-                                            className="form-control border-start-0 ps-0 shadow-none"
+                                            className="bg-transparent border-0 py-2 shadow-none text-dark"
                                         />
                                     </InputGroup>
                                 </Form.Group>
-                                <Button variant="primary" type="submit" className="w-100 btn fw-bold rounded-pill py-2 shadow-sm" disabled={loading}>
-                                    {loading ? <Spinner animation="border" size="sm" /> : "Send Code"}
+                                <Button type="submit" className="w-100 nav-btn-modern py-2 d-flex align-items-center justify-content-center" disabled={loading}>
+                                    {loading ? <Spinner animation="border" size="sm" /> : "Request Key"}
                                 </Button>
                             </Form>
                         )}
@@ -162,24 +155,25 @@ const ForgotPassword = () => {
                         {step === 2 && (
                             <Form onSubmit={handleVerifyOtp}>
                                 <Form.Group className="mb-3">
+                                    <Form.Label className="fw-bold text-secondary small text-uppercase text-center w-100 d-block mb-2">Auth Code</Form.Label>
                                     <Form.Control
                                         type="text"
                                         placeholder="000000"
                                         value={otp}
                                         onChange={(e) => setOtp(e.target.value)}
                                         required
-                                        className="form-control text-center fs-4 fw-bold letter-spacing-2 shadow-none border-primary"
+                                        className="form-control glass-3d-inset text-center fs-3 fw-bold border-0 rounded-4 py-2"
                                         maxLength="6"
-                                        style={{ letterSpacing: '6px' }}
+                                        style={{ letterSpacing: '8px', color: 'var(--primary-color)' }}
                                     />
                                 </Form.Group>
                                 <div className="d-flex justify-content-center mb-3">
-                                    <Button variant="link" onClick={handleSendOtp} disabled={!canResend || loading} className="p-0 text-decoration-none small fw-bold text-muted">
-                                        {canResend ? <span className="text-primary"><FaRedo className="me-1" /> Resend Code</span> : <span>Resend in {formatTime(timer)}</span>}
+                                    <Button variant="link" onClick={handleSendOtp} disabled={!canResend || loading} className="p-0 text-decoration-none small fw-bold text-secondary glass-3d px-3 py-1 rounded-pill">
+                                        {canResend ? <span className="text-primary"><FaRedo className="me-1" /> Resend</span> : <span>Resend in {formatTime(timer)}</span>}
                                     </Button>
                                 </div>
-                                <Button variant="primary" type="submit" className="w-100 btn fw-bold rounded-pill py-2 shadow-sm" disabled={loading}>
-                                    {loading ? <Spinner animation="border" size="sm" /> : "Verify Code"}
+                                <Button type="submit" className="w-100 nav-btn-modern py-2 d-flex align-items-center justify-content-center" disabled={loading}>
+                                    {loading ? <Spinner animation="border" size="sm" /> : "Verify Access"}
                                 </Button>
                             </Form>
                         )}
@@ -188,38 +182,38 @@ const ForgotPassword = () => {
                         {step === 3 && (
                             <Form onSubmit={handleResetPassword}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="fw-semibold text-muted small text-uppercase ls-1 mb-1">New Password</Form.Label>
-                                    <InputGroup>
-                                        <InputGroup.Text className="bg-white border-end-0"><FaLock className="text-primary opacity-50" /></InputGroup.Text>
+                                    <Form.Label className="fw-bold text-secondary small text-uppercase ls-1 mb-1 ms-2">New Password</Form.Label>
+                                    <InputGroup className="glass-3d-inset rounded-4 overflow-hidden border-0">
+                                        <InputGroup.Text className="bg-transparent border-0 ps-3"><FaLock className="text-primary opacity-50" /></InputGroup.Text>
                                         <Form.Control
                                             type={showPassword ? "text" : "password"}
-                                            placeholder="New password"
+                                            placeholder="••••••••"
                                             value={newPassword}
                                             onChange={(e) => setNewPassword(e.target.value)}
                                             required
-                                            className="form-control border-start-0 border-end-0 ps-0 shadow-none"
+                                            className="bg-transparent border-0 py-2 shadow-none text-dark"
                                         />
-                                        <Button variant="outline-secondary" className="border-start-0 bg-white text-muted" onClick={() => setShowPassword(!showPassword)}>
+                                        <Button variant="link" className="bg-transparent border-0 text-muted pe-3" onClick={() => setShowPassword(!showPassword)}>
                                             {showPassword ? <FaEyeSlash /> : <FaEye />}
                                         </Button>
                                     </InputGroup>
                                 </Form.Group>
                                 <Form.Group className="mb-4">
-                                    <Form.Label className="fw-semibold text-muted small text-uppercase ls-1 mb-1">Confirm Password</Form.Label>
-                                    <InputGroup>
-                                        <InputGroup.Text className="bg-white border-end-0"><FaCheckCircle className="text-primary opacity-50" /></InputGroup.Text>
+                                    <Form.Label className="fw-bold text-secondary small text-uppercase ls-1 mb-1 ms-2">Confirm Password</Form.Label>
+                                    <InputGroup className="glass-3d-inset rounded-4 overflow-hidden border-0">
+                                        <InputGroup.Text className="bg-transparent border-0 ps-3"><FaCheckCircle className="text-primary opacity-50" /></InputGroup.Text>
                                         <Form.Control
                                             type={showPassword ? "text" : "password"}
-                                            placeholder="Confirm password"
+                                            placeholder="••••••••"
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                             required
-                                            className="form-control border-start-0 ps-0 shadow-none"
+                                            className="bg-transparent border-0 py-2 shadow-none text-dark"
                                         />
                                     </InputGroup>
                                 </Form.Group>
-                                <Button variant="success" type="submit" className="w-100 btn fw-bold rounded-pill py-2 shadow-sm" disabled={loading}>
-                                    {loading ? <Spinner animation="border" size="sm" /> : "Reset Password"}
+                                <Button type="submit" className="w-100 nav-btn-modern py-2 d-flex align-items-center justify-content-center" style={{ background: 'var(--success-color)' }} disabled={loading}>
+                                    {loading ? <Spinner animation="border" size="sm" /> : "Update Vault Key"}
                                 </Button>
                             </Form>
                         )}

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../api/axiosConfig';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Container, Card, Button, Modal, Form, Alert, InputGroup } from 'react-bootstrap';
+import { Container, Card, Button, Modal, Form, Alert, InputGroup, Row, Col } from 'react-bootstrap';
 import {
     FaUser,
     FaEnvelope,
@@ -15,13 +15,6 @@ import {
     FaCog
 } from 'react-icons/fa';
 import { cacheUser, clearCachedUser, getCachedUser } from '../utils/authUserCache';
-
-// --- THEME PANEL STYLE ---
-const glassStyle = {
-    background: 'var(--glass-surface)',
-    border: '1px solid var(--glass-border)',
-    boxShadow: 'var(--glass-shadow)'
-};
 
 const Settings = () => {
     // --- STATE MANAGEMENT ---
@@ -43,7 +36,6 @@ const Settings = () => {
                 setUser(response.data);
                 cacheUser(response.data);
             } catch (error) {
-                // Silently fail and redirect to login if session is invalid
                 navigate('/login');
             }
         };
@@ -69,8 +61,6 @@ const Settings = () => {
                toast.success("Account deleted successfully. Goodbye!");
                navigate('/');
            } catch (error) {
-               // Your interceptor already extracted the message into error.message
-               // Do NOT check error.response here.
                const msg = error.message || "Failed to delete account.";
                toast.error(msg);
            } finally {
@@ -80,7 +70,7 @@ const Settings = () => {
        };
 
     return (
-        <div className="min-vh-100 fade-in py-5 app-theme-page" style={{ overflowX: 'hidden' }}>
+        <div className="min-vh-100 fade-in py-5 app-theme-page animate-3d-appear" style={{ overflowX: 'hidden' }}>
 
             {/* Background Blobs */}
             <div className="background-blob modern-blob blob-indigo blob-lg blob-top-left"></div>
@@ -89,75 +79,84 @@ const Settings = () => {
             <Container className="app-page-content" style={{ position: 'relative', maxWidth: '800px' }}>
 
                 {/* HEADER */}
-                <div className="mb-4">
-                    <Button variant="link" onClick={() => navigate('/dashboard')} className="p-0 text-decoration-none mb-3 fw-bold text-muted small">
-                        <FaArrowLeft className="me-2" /> Back to Dashboard
+                <div className="mb-5 animate-3d-appear stagger-1">
+                    <Button variant="link" onClick={() => navigate('/dashboard')} className="p-0 text-decoration-none mb-4 fw-bold text-muted small glass-3d px-3 py-1 rounded-pill">
+                        <FaArrowLeft className="me-2" /> Back to Vault
                     </Button>
                     <div className="d-flex align-items-center">
-                        <div className="bg-white p-3 rounded-circle shadow-sm me-3 text-primary">
-                            <FaCog size={28} />
+                        <div className="p-3 rounded-circle glass-3d me-4 text-primary pulse">
+                            <FaCog size={32} />
                         </div>
                         <div>
-                            <h2 className="fw-bold text-dark mb-0">Account Settings</h2>
-                            <p className="text-muted mb-0">Manage your profile and security preferences</p>
+                            <h2 className="fw-bold text-dark mb-0">Control Center</h2>
+                            <p className="text-muted mb-0">Manage your secure identity and protocols</p>
                         </div>
                     </div>
                 </div>
 
                 {/* PROFILE CARD */}
-                <Card className="border-0 mb-5" style={glassStyle}>
-                    <Card.Body className="p-4">
-                        <h5 className="fw-bold mb-4 text-primary pb-2 border-bottom border-secondary border-opacity-10">
-                            Profile Information
+                <Card className="border-0 mb-5 glass-3d animate-3d-appear stagger-2" style={{ borderRadius: '28px' }}>
+                    <Card.Body className="p-4 p-md-5">
+                        <h5 className="fw-bold mb-4 text-primary d-flex align-items-center">
+                            <div className="bg-primary bg-opacity-10 rounded-4 me-3 d-flex align-items-center justify-content-center" style={{ width: '42px', height: '42px' }}>
+                                <FaUser size={20} />
+                            </div>
+                            Core Profile
                         </h5>
 
-                        <Form.Group className="mb-4">
-                            <Form.Label className="fw-semibold text-muted small text-uppercase ls-1"><FaUser className="me-2 text-primary opacity-75"/> Username</Form.Label>
-                            <Form.Control
-                                type="text"
-                                value={user.username}
-                                disabled
-                                className="bg-white border-0 shadow-sm py-2 px-3 fw-bold text-dark"
-                            />
-                        </Form.Group>
-
-                        <Form.Group className="mb-4">
-                            <Form.Label className="fw-semibold text-muted small text-uppercase ls-1"><FaEnvelope className="me-2 text-primary opacity-75"/> Email Address</Form.Label>
-                            <Form.Control
-                                type="text"
-                                value={user.email}
-                                disabled
-                                className="bg-white border-0 shadow-sm py-2 px-3 fw-bold text-dark"
-                            />
-                        </Form.Group>
-
-                        <Form.Group className="mb-2">
-                            <Form.Label className="fw-semibold text-muted small text-uppercase ls-1"><FaShieldAlt className="me-2 text-primary opacity-75"/> Account Role</Form.Label>
-                            <Form.Control
-                                type="text"
-                                value={user.role}
-                                disabled
-                                className="bg-white border-0 shadow-sm py-2 px-3 fw-bold text-dark"
-                            />
-                        </Form.Group>
+                        <Row className="g-4">
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className="fw-bold text-secondary small text-uppercase ls-1 ms-2 mb-2">Username</Form.Label>
+                                    <div className="glass-3d-inset p-3 rounded-4 bg-soft opacity-75">
+                                        <div className="d-flex align-items-center text-dark fw-bold">
+                                            <FaUser className="me-2 text-primary opacity-50" size={14}/>
+                                            {user.username}
+                                        </div>
+                                    </div>
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className="fw-bold text-secondary small text-uppercase ls-1 ms-2 mb-2">Account Role</Form.Label>
+                                    <div className="glass-3d-inset p-3 rounded-4 bg-soft opacity-75">
+                                        <div className="d-flex align-items-center text-dark fw-bold">
+                                            <FaShieldAlt className="me-2 text-primary opacity-50" size={14}/>
+                                            {user.role}
+                                        </div>
+                                    </div>
+                                </Form.Group>
+                            </Col>
+                            <Col xs={12}>
+                                <Form.Group>
+                                    <Form.Label className="fw-bold text-secondary small text-uppercase ls-1 ms-2 mb-2">Primary Email</Form.Label>
+                                    <div className="glass-3d-inset p-3 rounded-4 bg-soft opacity-75">
+                                        <div className="d-flex align-items-center text-dark fw-bold">
+                                            <FaEnvelope className="me-2 text-primary opacity-50" size={14}/>
+                                            {user.email}
+                                        </div>
+                                    </div>
+                                </Form.Group>
+                            </Col>
+                        </Row>
                     </Card.Body>
                 </Card>
 
                 {/* DANGER ZONE CARD */}
-                <Card className="border-danger shadow-sm" style={{ background: 'var(--danger-surface)', border: '1px solid var(--danger-border)', boxShadow: 'var(--danger-shadow)' }}>
-                    <Card.Header className="bg-danger text-white fw-bold border-0 d-flex align-items-center">
-                        <FaExclamationTriangle className="me-2" /> Danger Zone
-                    </Card.Header>
-                    <Card.Body className="p-4">
-                        <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <Card className="border-0 animate-3d-appear stagger-3 overflow-hidden shadow-sm" style={{ borderRadius: '28px', background: 'rgba(228, 88, 122, 0.04)', border: '1px solid rgba(228, 88, 122, 0.15) !important' }}>
+                    <div className="p-3 bg-danger text-white fw-bold d-flex align-items-center uppercase ls-2 small">
+                        <FaExclamationTriangle className="me-2" /> Termination Protocol
+                    </div>
+                    <Card.Body className="p-4 p-md-5">
+                        <div className="d-flex justify-content-between align-items-center flex-wrap gap-4">
                             <div>
-                                <h5 className="fw-bold text-danger">Delete Account</h5>
-                                <p className="text-danger-emphasis mb-0 small" style={{ maxWidth: '450px' }}>
-                                    Once you delete your account, there is no going back. All your data will be permanently removed. Please be certain.
+                                <h5 className="fw-bold text-danger mb-2">Purge Account</h5>
+                                <p className="text-dark mb-0 small fw-medium" style={{ maxWidth: '480px', opacity: 0.8 }}>
+                                    Initiating this protocol will permanently delete your identity, uploaded contracts, and analysis history from the AI vault. This action is irreversible.
                                 </p>
                             </div>
-                            <Button variant="outline-danger" className="fw-bold px-4 rounded-pill" onClick={() => setShowDeleteModal(true)}>
-                                Delete Account
+                            <Button variant="danger" className="btn-danger border-0 fw-bold px-4 py-2 rounded-pill shadow-sm" onClick={() => setShowDeleteModal(true)}>
+                                Purge Identity
                             </Button>
                         </div>
                     </Card.Body>
@@ -165,70 +164,64 @@ const Settings = () => {
 
                 {/* DELETE CONFIRMATION MODAL */}
                 <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered backdrop="static">
-                    <Modal.Header closeButton className="border-0 pb-0">
-                        <Modal.Title className="text-danger fw-bold">
-                            <FaTrash className="me-2" /> Confirm Account Deletion
+                    <Modal.Header closeButton className="border-0 bg-transparent p-4 pb-0">
+                        <Modal.Title className="text-danger fw-bold h4">
+                            <FaTrash className="me-2" /> Final Disposal
                         </Modal.Title>
                     </Modal.Header>
-                    <Modal.Body className="pt-2">
-                        <Alert variant="warning" className="small border-0 shadow-sm mb-4">
-                            <FaExclamationTriangle className="me-2" />
-                            All your uploaded contracts, chats, and personal data will be permanently removed.
+                    <Modal.Body className="bg-transparent p-4">
+                        <Alert variant="warning" className="glass-3d border-0 text-dark fw-bold small rounded-4 py-3 mb-4 d-flex align-items-center">
+                            <FaExclamationTriangle className="me-3 text-warning" size={24} />
+                            All vault data, neural scans, and chat logs will be permanently erased.
                         </Alert>
 
                         <Form.Group className="mb-3">
-                            <Form.Label className="fw-bold text-muted small text-uppercase">Enter Password to Confirm</Form.Label>
-                            <InputGroup>
+                            <Form.Label className="fw-bold text-muted small text-uppercase ms-2 mb-2">Vault Authorization</Form.Label>
+                            <InputGroup className="glass-3d-inset rounded-4 overflow-hidden border-0">
                                 <Form.Control
                                     type={showPassword ? "text" : "password"}
-                                    placeholder="Your password"
+                                    placeholder="Enter password to confirm"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="border-end-0 shadow-none"
+                                    className="bg-transparent border-0 py-3 ps-3 shadow-none"
                                 />
                                 <Button
-                                    variant="outline-secondary"
-                                    className="border-start-0 bg-white"
+                                    variant="link"
+                                    className="bg-transparent border-0 text-muted pe-3"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    title={showPassword ? "Hide password" : "Show password"}
                                 >
                                     {showPassword ? <FaEyeSlash /> : <FaEye />}
                                 </Button>
                             </InputGroup>
                         </Form.Group>
 
-                        {/* FORGOT PASSWORD LINK */}
                         <div className="text-end">
                             <Button
                                 variant="link"
-                                className="p-0 text-decoration-none small text-primary fw-bold"
+                                className="auth-text-action small text-decoration-none"
                                 onClick={() => {
                                     setShowDeleteModal(false);
                                     navigate('/forgot-password', {
-                                        state: {
-                                            returnPath: '/settings',
-                                            username: user.username,
-                                            email: user.email
-                                        }
+                                        state: { returnPath: '/settings', username: user.username, email: user.email }
                                     });
                                 }}
                             >
-                                Forgot Password?
+                                Forgot password?
                             </Button>
                         </div>
 
                     </Modal.Body>
-                    <Modal.Footer className="border-0 pt-0">
-                        <Button variant="light" onClick={() => setShowDeleteModal(false)} className="rounded-pill px-4 fw-bold">
+                    <Modal.Footer className="border-0 bg-transparent p-4 pt-0">
+                        <Button variant="link" onClick={() => setShowDeleteModal(false)} className="text-decoration-none text-muted fw-bold">
                             Cancel
                         </Button>
                         <Button
                             variant="danger"
                             onClick={handleDeleteAccount}
                             disabled={loading || !password}
-                            className="rounded-pill px-4 fw-bold shadow-sm"
+                            className="btn-danger glass-3d border-0 rounded-pill px-4 py-2 fw-bold"
                         >
-                            {loading ? "Deleting..." : "Permanently Delete Account"}
+                            {loading ? "Purging..." : "Confirm Deletion"}
                         </Button>
                     </Modal.Footer>
                 </Modal>

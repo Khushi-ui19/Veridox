@@ -146,15 +146,14 @@ public class ContractService {
                 contract.setStatus("FAILED");
                 contract.setAnalysisProgress(0);
                 contractRepository.save(contract);
+
+                // Refund the credit (token) to the user
+                if (contract.getOwnerUsername() != null) {
+                    rateLimitingService.refundToken(contract.getOwnerUsername());
+                }
             });
         } catch (Exception markFailedException) {
             logger.warn("Could not mark failed status for contract: {}", contractId, markFailedException);
-        }
-
-        try {
-            contractRepository.deleteById(contractId);
-        } catch (Exception deleteException) {
-            logger.error("Could not delete failed contract: {}", contractId, deleteException);
         }
     }
 

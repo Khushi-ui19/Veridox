@@ -1,6 +1,10 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Spinner } from 'react-bootstrap';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import api from './api/axiosConfig';
+import { cacheUser, clearCachedUser } from './utils/authUserCache';
 
 // --- FIX: Change these imports to match your new lowercase filenames ---
 import Home from './pages/home';        // changed from './pages/Home'
@@ -15,8 +19,59 @@ import CompleteRegistration from './pages/completeRegistration';
 import AutoLogout from './pages/AutoLogout';
 
 const PrivateRoute = ({ children }) => {
-    const isAuthenticated = localStorage.getItem('lastActive');
-    return isAuthenticated ? children : <Navigate to="/login" />;
+    const location = useLocation();
+    const [authStatus, setAuthStatus] = useState(() =>
+        localStorage.getItem('lastActive') ? 'checking' : 'unauthenticated'
+    );
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const verifySession = async () => {
+            if (!localStorage.getItem('lastActive')) {
+                if (isMounted) {
+                    setAuthStatus('unauthenticated');
+                }
+                return;
+            }
+
+            if (isMounted) {
+                setAuthStatus('checking');
+            }
+
+            try {
+                const response = await api.get('/auth/profile');
+                cacheUser(response.data);
+                if (isMounted) {
+                    setAuthStatus('authenticated');
+                }
+            } catch {
+                localStorage.removeItem('lastActive');
+                clearCachedUser();
+                if (isMounted) {
+                    setAuthStatus('unauthenticated');
+                }
+            }
+        };
+
+        verifySession();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [location.pathname]);
+
+    if (authStatus === 'checking') {
+        return (
+            <div className="min-vh-100 d-flex align-items-center justify-content-center app-theme-page">
+                <Spinner animation="border" variant="primary" />
+            </div>
+        );
+    }
+
+    return authStatus === 'authenticated'
+        ? children
+        : <Navigate to="/login" replace state={{ from: location }} />;
 };
 
 function App() {
