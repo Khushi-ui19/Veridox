@@ -13,6 +13,7 @@ public class SpaForwardingController {
 
     @GetMapping({
         "/login",
+        "/oauth2-login",
         "/register",
         "/dashboard",
         "/forgot-password",

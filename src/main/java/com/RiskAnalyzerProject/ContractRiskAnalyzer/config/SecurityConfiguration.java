@@ -76,7 +76,7 @@ public class SecurityConfiguration {
         return (web) -> web.ignoring()
                 .requestMatchers("/assets/**", "/favicon.ico", "/favicon.svg", "/index.html", "/", "/static/**", "/*.js", "/*.css")
                 // SPA client-side routes — bypass security so SpaForwardingController serves index.html
-                .requestMatchers("/login", "/register", "/dashboard", "/forgot-password",
+                .requestMatchers("/login", "/oauth2-login", "/register", "/dashboard", "/forgot-password",
                         "/complete-registration", "/settings", "/chat/**", "/contracts/**");
     }
 }
