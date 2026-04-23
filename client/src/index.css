@@ -1010,6 +1010,13 @@ body.is-scrolling .navbar {
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2) !important;
 }
 
+@media (max-width: 768px) {
+  .nav-btn-modern {
+    padding: 8px 20px !important;
+    font-size: 0.8rem !important;
+  }
+}
+
 .nav-btn-modern:hover {
   transform: translateY(-3px) scale(1.02) !important;
   box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4) !important;

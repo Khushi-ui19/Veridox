@@ -100,11 +100,11 @@ const Home = () => {
             <div className="background-blob modern-blob blob-cyan blob-md blob-bottom-right" style={{ opacity: 0.2, willChange: 'transform', transform: 'translateZ(0)' }}></div>
 
             {/* --- 1. PREMIUM GLASS NAVBAR --- */}
-            <Navbar className="fixed-top px-4 py-2 mt-4 mx-3 mx-md-5 nav-glass rounded-pill animate-entrance" style={{ zIndex: 1000, background: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.5)' }}>
+            <Navbar className="fixed-top px-3 px-md-4 py-2 mt-2 mt-md-4 mx-2 mx-md-5 nav-glass rounded-pill animate-entrance" style={{ zIndex: 1000, background: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.5)' }}>
                 <Container fluid className="d-flex justify-content-between align-items-center">
-                    <Navbar.Brand className="fw-bold d-flex align-items-center text-primary m-0" style={{ fontSize: '1.5rem', letterSpacing: '-0.5px' }}>
-                        <div className="glass-3d p-2 rounded-circle me-3 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
-                            <FaShieldAlt size={20} />
+                    <Navbar.Brand className="fw-bold d-flex align-items-center text-primary m-0" style={{ fontSize: '1.25rem', letterSpacing: '-0.5px' }}>
+                        <div className="glass-3d p-2 rounded-circle me-2 me-md-3 d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px' }}>
+                            <FaShieldAlt size={18} />
                         </div>
                         <span className="d-none d-sm-inline">Contract<span className="text-dark">Analyzer</span></span>
                     </Navbar.Brand>
@@ -120,13 +120,15 @@ const Home = () => {
                                 </Button>
                                 
                                 {/* Mobile Login Button shown instead of Start Free */}
-                                <Button className="nav-btn-modern d-block d-md-none px-4" onClick={() => navigate('/login')}>
+                                <Button className="nav-btn-modern d-block d-md-none px-3" onClick={() => navigate('/login')} style={{ fontSize: '0.85rem' }}>
                                     Log In
                                 </Button>
                             </div>
                         ) : (
-                            <Button className="nav-btn-modern" onClick={() => navigate('/dashboard')}>
-                                Open Vault <FaArrowRight className="ms-2" />
+                            <Button className="nav-btn-modern px-3 px-md-4" onClick={() => navigate('/dashboard')} style={{ fontSize: '0.85rem' }}>
+                                <span className="d-none d-sm-inline">Open Vault</span>
+                                <span className="d-inline d-sm-none">Vault</span>
+                                <FaArrowRight className="ms-2" />
                             </Button>
                         )}
                     </div>
