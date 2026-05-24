@@ -32,7 +32,16 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
     // Dynamically determine frontend URL based on request - works for any port/deployment
     private String getFrontendUrl(HttpServletRequest request) {
-        // Check for forwarded host header (common in reverse proxy setups like Nginx, Cloudflare, etc.)
+        // 1. Priority: Environment Variable (Explicitly set for production)
+        String configuredUrl = System.getenv("APP_FRONTEND_URL");
+        if (configuredUrl == null || configuredUrl.isBlank()) {
+            configuredUrl = System.getProperty("app.frontend.url");
+        }
+        if (configuredUrl != null && !configuredUrl.isBlank()) {
+            return configuredUrl.replaceAll("/+$", ""); // Remove trailing slashes
+        }
+
+        // 2. Check for forwarded host header (Digital Ocean, Nginx, etc.)
         String forwardedHost = request.getHeader("X-Forwarded-Host");
         if (forwardedHost != null && !forwardedHost.isBlank()) {
             String proto = request.getHeader("X-Forwarded-Proto");
@@ -40,28 +49,34 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             return (isHttps ? "https://" : "http://") + forwardedHost;
         }
 
-        // Check Origin header (from CORS requests)
+        // 3. Check Origin header - Ensure it's not Google
         String origin = request.getHeader("Origin");
-        if (origin != null && !origin.isBlank()) {
-            return origin;
+        if (origin != null && !origin.isBlank() && !origin.contains("google.com")) {
+            return origin.replaceAll("/+$", "");
         }
 
-        // Check Referer header
-        String referer = request.getHeader("Referer");
-        if (referer != null && !referer.isBlank()) {
-            try {
-                java.net.URL url = new java.net.URL(referer);
-                return url.getProtocol() + "://" + url.getAuthority();
-            } catch (Exception e) {
-                // If URL parsing fails, fall through to other methods
+        // 4. Fallback: Reconstruct from current request (respecting Forwarded headers if enabled)
+        String scheme = request.getScheme();
+        String serverName = request.getServerName();
+        int serverPort = request.getServerPort();
+
+        // If we have a forwarded proto, use it
+        String forwardedProto = request.getHeader("X-Forwarded-Proto");
+        if (forwardedProto != null && !forwardedProto.isBlank()) {
+            scheme = forwardedProto;
+        }
+
+        StringBuilder url = new StringBuilder();
+        url.append(scheme).append("://").append(serverName);
+
+        // Only append port if it's not standard and not the internal backend port unless on localhost
+        if (("http".equals(scheme) && serverPort != 80) || ("https".equals(scheme) && serverPort != 443)) {
+            if (serverPort != 8081 || "localhost".equals(serverName) || "127.0.0.1".equals(serverName)) {
+                url.append(":").append(serverPort);
             }
         }
 
-        // Fallback to default configuration or localhost detection
-        String configuredUrl = System.getProperty("app.frontend.url", 
-                    System.getenv().getOrDefault("APP_FRONTEND_URL", 
-                    "http://localhost:5173")); // Default to Vite dev server port
-        return configuredUrl;
+        return url.toString();
     }
 
     private boolean isSecureRequest(HttpServletRequest request) {

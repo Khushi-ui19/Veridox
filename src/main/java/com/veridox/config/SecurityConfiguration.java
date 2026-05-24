@@ -54,13 +54,15 @@ public class SecurityConfiguration {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Accept localhost/Vercel/Koyeb origins while keeping credentialed requests enabled.
+        // Accept localhost/Vercel/Koyeb/DigitalOcean origins while keeping credentialed requests enabled.
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "http://127.0.0.1:*",
                 "https://contract-risk-analyzer-theta.vercel.app",
                 "http://192.168.*.*:*",
-                "https://*.koyeb.app"
+                "https://*.koyeb.app",
+                "https://*.ondigitalocean.app",
+                "https://68.183.83.161.nip.io"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
