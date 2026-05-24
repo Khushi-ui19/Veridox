@@ -1,9 +1,14 @@
-# 📄 Contract Risk Analyzer
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit-00C7B7?style=for-the-badge&logo=vercel)](https://contract-risk-analyzer-theta.vercel.app/)
+# 📄 Veridox
 
 An AI-powered web application designed to help users upload, scan, and analyze legal contracts (PDFs) for potential risks, compliance issues, and key terms. Built with a decoupled **React (Vite)** frontend and a **Spring Boot** backend, utilizing **Tesseract OCR** and Large Language Models for deep analysis.
 
 # Live Link: (https://contract-risk-analyzer-theta.vercel.app/)
 ---
+## 📸 Screenshots
+![App Screenshot]<img width="1362" height="603" alt="Screenshot 2026-05-23 182255" src="https://github.com/user-attachments/assets/97ea1b94-fcaf-482d-b38e-a70158683c60" />
+<img width="422" height="512" alt="Screenshot 2026-05-23 182304" src="https://github.com/user-attachments/assets/ab3d78af-ddea-46b0-a9c4-6ec813b711bb" />
+<img width="1362" height="593" alt="Screenshot 2026-05-23 182444" src="https://github.com/user-attachments/assets/f3424ea0-f43b-4784-bd93-ec062a15d459" />
 
 ## ✨ Key Features
 
