@@ -26,7 +26,7 @@ export const getBackendOrigin = () => {
 
     // 2. If we are on the Vite Dev Server, point to the local Spring Boot backend
     if (port === '5173' && isLocalHostname(hostname)) {
-        return 'http://localhost:8080';
+        return 'http://localhost:8081';
     }
 
     // 3. Otherwise (Docker, Localhost Prod, Local Network IP), the backend is the same as the frontend

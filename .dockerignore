@@ -1,0 +1,13 @@
+target/
+node_modules/
+.git/
+.idea/
+.mvn/
+client/node_modules/
+client/dist/
+mvnw
+mvnw.cmd
+Dockerfile
+docker-compose.yml
+.dockerignore
+.gitignore

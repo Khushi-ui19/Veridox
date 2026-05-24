@@ -30,11 +30,39 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Autowired
     private UserRepository userRepository;
 
-    // Use a relative path so it works on both localhost:8080 and localhost:5173
-    // Or hardcode to 8080 if you are strictly testing Docker.
-    // Ideally, use a property, but for now, let's point to the root (relative).
-    @Value("${app.frontend.url:${APP_FRONTEND_URL:http://localhost:8080}}")
-    private String FRONTEND_URL;
+    // Dynamically determine frontend URL based on request - works for any port/deployment
+    private String getFrontendUrl(HttpServletRequest request) {
+        // Check for forwarded host header (common in reverse proxy setups like Nginx, Cloudflare, etc.)
+        String forwardedHost = request.getHeader("X-Forwarded-Host");
+        if (forwardedHost != null && !forwardedHost.isBlank()) {
+            String proto = request.getHeader("X-Forwarded-Proto");
+            boolean isHttps = "https".equalsIgnoreCase(proto);
+            return (isHttps ? "https://" : "http://") + forwardedHost;
+        }
+
+        // Check Origin header (from CORS requests)
+        String origin = request.getHeader("Origin");
+        if (origin != null && !origin.isBlank()) {
+            return origin;
+        }
+
+        // Check Referer header
+        String referer = request.getHeader("Referer");
+        if (referer != null && !referer.isBlank()) {
+            try {
+                java.net.URL url = new java.net.URL(referer);
+                return url.getProtocol() + "://" + url.getAuthority();
+            } catch (Exception e) {
+                // If URL parsing fails, fall through to other methods
+            }
+        }
+
+        // Fallback to default configuration or localhost detection
+        String configuredUrl = System.getProperty("app.frontend.url", 
+                    System.getenv().getOrDefault("APP_FRONTEND_URL", 
+                    "http://localhost:5173")); // Default to Vite dev server port
+        return configuredUrl;
+    }
 
     private boolean isSecureRequest(HttpServletRequest request) {
         String forwardedProto = request.getHeader("X-Forwarded-Proto");
@@ -87,14 +115,14 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         if (existingUser.isPresent()) {
             if ("register".equals(authIntent)) {
                 // Redirect to /login on the SAME domain
-                String targetUrl = FRONTEND_URL + "/login?error=user_exists";
+                String targetUrl = getFrontendUrl(request) + "/login?error=user_exists";
                 getRedirectStrategy().sendRedirect(request, response, targetUrl);
             } else {
                 String jwt = jwtUtil.generateToken(existingUser.get().getUsername());
                 ResponseCookie jwtCookie = buildJwtCookie(request, jwt);
                 response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
                 // Redirect to /login on the SAME domain
-                String targetUrl = FRONTEND_URL + "/login?token=oauth2_success";
+                String targetUrl = getFrontendUrl(request) + "/login?token=oauth2_success";
                 getRedirectStrategy().sendRedirect(request, response, targetUrl);
             }
         } else {
@@ -103,7 +131,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 getRedirectStrategy().sendRedirect(request, response, targetUrl);
             } else {
                 String tempToken = jwtUtil.generateToken(email);
-                String targetUrl = FRONTEND_URL + "/complete-registration"
+                String targetUrl = getFrontendUrl(request) + "/complete-registration"
                         + "?email=" + URLEncoder.encode(email, StandardCharsets.UTF_8)
                         + "&name=" + URLEncoder.encode(name != null ? name : "", StandardCharsets.UTF_8)
                         + "&tempToken=" + tempToken;
