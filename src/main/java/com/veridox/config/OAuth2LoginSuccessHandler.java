@@ -127,7 +127,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             }
         } else {
             if ("login".equals(authIntent)) {
-                String targetUrl = FRONTEND_URL + "/register?error=account_not_found";
+                String targetUrl = getFrontendUrl(request) + "/register?error=account_not_found";
                 getRedirectStrategy().sendRedirect(request, response, targetUrl);
             } else {
                 String tempToken = jwtUtil.generateToken(email);
