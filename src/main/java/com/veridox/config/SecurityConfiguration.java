@@ -35,6 +35,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/", "/index.html","/assets/**", "/static/**", "/*.js", "/*.css", "/*.ico", "/*.json", "/*.png", "/*.svg").permitAll()
                         // 2. Allow Public Backend Endpoints
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         // 3. Authenticate only the API routes
                         .requestMatchers("/api/**").authenticated()
