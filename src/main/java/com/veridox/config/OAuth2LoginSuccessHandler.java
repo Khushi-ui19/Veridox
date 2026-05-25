@@ -76,7 +76,27 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             }
         }
 
-        return url.toString();
+        String result = url.toString();
+
+        // Safety: Never redirect to a Google domain (this can happen on OAuth2 callbacks)
+        if (result.contains("google.com") || result.contains("googleapis.com")) {
+            System.err.println("⚠️ getFrontendUrl() resolved to a Google domain (" + result + "). "
+                    + "Please set the APP_FRONTEND_URL environment variable. Falling back to request URL.");
+            // Last-resort fallback: use the OAuth2 redirect_uri's base if available
+            String redirectUri = request.getParameter("redirect_uri");
+            if (redirectUri != null && !redirectUri.isBlank()) {
+                try {
+                    java.net.URI uri = java.net.URI.create(redirectUri);
+                    return uri.getScheme() + "://" + uri.getHost()
+                            + (uri.getPort() > 0 && uri.getPort() != 443 && uri.getPort() != 80
+                            ? ":" + uri.getPort() : "");
+                } catch (Exception ignored) {}
+            }
+            // Absolute last resort - use the configured OAuth2 redirect base from Spring
+            return "https://68.183.83.161.nip.io";
+        }
+
+        return result;
     }
 
     private boolean isSecureRequest(HttpServletRequest request) {
