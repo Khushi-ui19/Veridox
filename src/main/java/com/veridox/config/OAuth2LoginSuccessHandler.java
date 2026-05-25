@@ -80,22 +80,25 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     }
 
     private boolean isSecureRequest(HttpServletRequest request) {
+        // 1. Check Forwarded Protocol (Standard for Load Balancers/Proxies)
         String forwardedProto = request.getHeader("X-Forwarded-Proto");
         if (forwardedProto != null && !forwardedProto.isBlank()) {
             return "https".equalsIgnoreCase(forwardedProto);
         }
 
+        // 2. Check current request status (Standard Spring/Servlet check)
+        if (request.isSecure()) {
+            return true;
+        }
+
+        // 3. Check Origin/Referer as fallback (Only if they are HTTPS)
         String origin = request.getHeader("Origin");
-        if (origin != null && !origin.isBlank()) {
-            return origin.startsWith("https://");
+        if (origin != null && origin.startsWith("https://")) {
+            return true;
         }
 
         String referer = request.getHeader("Referer");
-        if (referer != null && !referer.isBlank()) {
-            return referer.startsWith("https://");
-        }
-
-        return request.isSecure();
+        return referer != null && referer.startsWith("https://");
     }
 
     private ResponseCookie buildJwtCookie(HttpServletRequest request, String token) {
