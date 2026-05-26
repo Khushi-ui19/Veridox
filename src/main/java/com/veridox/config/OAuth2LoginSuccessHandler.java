@@ -30,59 +30,46 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Autowired
     private UserRepository userRepository;
 
-    // Dynamically determine frontend URL based on request - works for any port/deployment
+    // Read from application.properties: app.frontend.url=${APP_FRONTEND_URL:}
+    // Empty by default → auto-detect from request. Set APP_FRONTEND_URL env var to override.
+    @Value("${app.frontend.url:}")
+    private String configuredFrontendUrl;
+
+    /**
+     * Determines the frontend URL dynamically from the incoming request.
+     * Works for BOTH localhost and production without hardcoding.
+     *
+     * Priority:
+     * 1. app.frontend.url property / APP_FRONTEND_URL env var (if set)
+     * 2. Auto-detect from the actual HTTP request (scheme + host + port)
+     */
     private String getFrontendUrl(HttpServletRequest request) {
-        // 1. Priority: Environment Variable (Explicitly set for production)
-        String configuredUrl = System.getenv("APP_FRONTEND_URL");
-        if (configuredUrl == null || configuredUrl.isBlank()) {
-            configuredUrl = System.getProperty("app.frontend.url");
-        }
-        if (configuredUrl != null && !configuredUrl.isBlank()) {
-            return configuredUrl.replaceAll("/+$", ""); // Remove trailing slashes
+        // 1. Use explicitly configured URL if provided
+        if (configuredFrontendUrl != null && !configuredFrontendUrl.isBlank()) {
+            return configuredFrontendUrl.replaceAll("/+$", "");
         }
 
-        // 2. Check for forwarded host header (Digital Ocean, Nginx, etc.)
-        String forwardedHost = request.getHeader("X-Forwarded-Host");
-        if (forwardedHost != null && !forwardedHost.isBlank()) {
-            String proto = request.getHeader("X-Forwarded-Proto");
-            boolean isHttps = "https".equalsIgnoreCase(proto);
-            return (isHttps ? "https://" : "http://") + forwardedHost;
-        }
-
-        // 3. Check Origin header - Ensure it's not Google
-        String origin = request.getHeader("Origin");
-        if (origin != null && !origin.isBlank() && !origin.contains("google.com")) {
-            return origin.replaceAll("/+$", "");
-        }
-
-        // 4. Fallback: Reconstruct from current request (respecting Forwarded headers if enabled)
+        // 2. Auto-detect from the request
         String scheme = request.getScheme();
         String serverName = request.getServerName();
         int serverPort = request.getServerPort();
 
-        // If we have a forwarded proto, use it
+        // Respect forwarded headers from reverse proxies (Nginx, DigitalOcean, etc.)
         String forwardedProto = request.getHeader("X-Forwarded-Proto");
         if (forwardedProto != null && !forwardedProto.isBlank()) {
             scheme = forwardedProto;
         }
-
-        StringBuilder url = new StringBuilder();
-        url.append(scheme).append("://").append(serverName);
-
-        // Only append port if it's not standard and not the internal backend port unless on localhost
-        if (("http".equals(scheme) && serverPort != 80) || ("https".equals(scheme) && serverPort != 443)) {
-            if (serverPort != 8081 || "localhost".equals(serverName) || "127.0.0.1".equals(serverName)) {
-                url.append(":").append(serverPort);
-            }
+        String forwardedHost = request.getHeader("X-Forwarded-Host");
+        if (forwardedHost != null && !forwardedHost.isBlank()) {
+            serverName = forwardedHost.split(",")[0].trim();
+            serverPort = "https".equalsIgnoreCase(scheme) ? 443 : 80;
         }
 
-        String result = url.toString();
-
-        // Safety: Never redirect to a Google domain (this can happen on OAuth2 callbacks)
-        if (result.contains("google.com") || result.contains("googleapis.com")) {
-            System.err.println("⚠️ getFrontendUrl() resolved to a Google domain (" + result + "). "
-                    + "Please set the APP_FRONTEND_URL environment variable. Falling back to request URL.");
-            // Last-resort fallback: use the OAuth2 redirect_uri's base if available
+        // Safety: never redirect to Google domains (OAuth2 callback quirk)
+        if (serverName.contains("google.com") || serverName.contains("googleapis.com")) {
+            System.err.println("⚠️ getFrontendUrl() detected Google domain (" + serverName + "). "
+                    + "Please set APP_FRONTEND_URL env variable.");
+            // Try to extract base URL from the redirect_uri parameter
             String redirectUri = request.getParameter("redirect_uri");
             if (redirectUri != null && !redirectUri.isBlank()) {
                 try {
@@ -92,11 +79,21 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                             ? ":" + uri.getPort() : "");
                 } catch (Exception ignored) {}
             }
-            // Absolute last resort - use the configured OAuth2 redirect base from Spring
-            return "https://68.183.83.161.nip.io";
+            return "http://localhost:8081";
         }
 
-        return result;
+        // Build the URL
+        StringBuilder url = new StringBuilder();
+        url.append(scheme).append("://").append(serverName);
+
+        // Append port only if non-standard
+        boolean isStandardPort = ("http".equals(scheme) && serverPort == 80)
+                || ("https".equals(scheme) && serverPort == 443);
+        if (!isStandardPort && serverPort > 0) {
+            url.append(":").append(serverPort);
+        }
+
+        return url.toString();
     }
 
     private boolean isSecureRequest(HttpServletRequest request) {
@@ -138,7 +135,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         String email = oAuth2User.getAttribute("email");
         String name = oAuth2User.getAttribute("name");
 
-        Optional<User> existingUser = userRepository.findByEmail(email);
+        Optional<User> existingUser = userRepository.findByEmailIgnoreCase(email);
 
         String authIntent = "login";
         if (request.getCookies() != null) {

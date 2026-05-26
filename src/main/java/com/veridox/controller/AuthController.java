@@ -132,6 +132,9 @@ public class AuthController {
 
     @GetMapping("/profile")
     public ResponseEntity<?> getUserProfile(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Not authenticated"));
+        }
         User user = authService.getUserProfile(principal.getName());
         // Return only safe fields (avoid sending password/otp)
         Map<String, String> response = new HashMap<>();

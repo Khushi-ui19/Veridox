@@ -312,6 +312,7 @@ public class AuthService {
 
     public User getUserProfile(String username) {
         return userRepository.findByUsernameIgnoreCase(normalizeCredential(username))
+                .or(() -> userRepository.findByEmailIgnoreCase(normalizeCredential(username)))
                 .orElseThrow(() -> new ResourceNotFound("User not found"));
     }
 

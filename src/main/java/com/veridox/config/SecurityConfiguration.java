@@ -58,7 +58,7 @@ public class SecurityConfiguration {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "http://127.0.0.1:*",
-                "https://contract-risk-analyzer-theta.vercel.app",
+                "https://contract-risk-analyzer-theta.vercel.app", // Legacy URL - can be removed after migration
                 "http://192.168.*.*:*",
                 "https://*.koyeb.app",
                 "https://*.ondigitalocean.app",
