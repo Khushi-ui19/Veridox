@@ -6,9 +6,12 @@ An AI-powered web application designed to help users upload, scan, and analyze l
 # Live Link: https://68.183.83.161.nip.io/
 ---
 ## 📸 Screenshots
-![App Screenshot]<img width="1362" height="603" alt="Screenshot 2026-05-23 182255" src="https://github.com/user-attachments/assets/97ea1b94-fcaf-482d-b38e-a70158683c60" />
-<img width="422" height="512" alt="Screenshot 2026-05-23 182304" src="https://github.com/user-attachments/assets/ab3d78af-ddea-46b0-a9c4-6ec813b711bb" />
-<img width="1362" height="593" alt="Screenshot 2026-05-23 182444" src="https://github.com/user-attachments/assets/f3424ea0-f43b-4784-bd93-ec062a15d459" />
+<img width="1365" height="597" alt="Screenshot 2026-05-26 091505" src="https://github.com/user-attachments/assets/fbaea92e-499b-4c2e-b331-6510035b864b" />
+
+<img width="1365" height="600" alt="Screenshot 2026-05-26 091602" src="https://github.com/user-attachments/assets/bec66acc-0715-4a09-9704-906ac02ed4b2" />
+
+<img width="1365" height="604" alt="Screenshot 2026-05-26 091613" src="https://github.com/user-attachments/assets/324d40a2-c53b-4cd8-9a9a-a125ad295a20" />
+
 
 ## ✨ Key Features
 
